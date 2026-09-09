@@ -139,14 +139,42 @@ export function nowRunning(snapshot: Snapshot): Performance[] {
 }
 
 /**
- * KOPIS reports `fcltynm` as "venue (hall)", which collapses to a duplicate
- * when a venue has a single hall of the same name — "entry55 (entry55 )".
+ * Split a trailing parenthesised group, respecting nesting.
+ *
+ * A naive lazy regex fails on real KOPIS values: for
+ * "오아스페이스 (구, 스페이스 홍) (오아스페이스(구, 스페이스 홍))" it stops at the
+ * first "(" and returns nonsense. Scanning backwards with a depth counter finds
+ * the "(" that actually opens the final group.
+ */
+function splitTrailingParen(s: string): [string, string] | null {
+  if (!s.endsWith(')')) return null;
+  let depth = 0;
+  for (let i = s.length - 1; i >= 0; i -= 1) {
+    if (s[i] === ')') depth += 1;
+    else if (s[i] === '(') {
+      depth -= 1;
+      if (depth === 0) {
+        const outer = s.slice(0, i).trim();
+        const inner = s.slice(i + 1, -1).trim();
+        return outer ? [outer, inner] : null;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * KOPIS reports `fcltynm` as "venue (hall)", which reads as a stutter whenever
+ * the hall repeats the venue name — "entry55 [성수] (entry55 [성수] )". Spacing
+ * often differs between the two halves, so compare with whitespace removed.
  */
 export function tidyVenueName(name: string): string {
-  const m = name.match(/^\s*(.+?)\s*\(\s*(.+?)\s*\)\s*$/);
-  if (!m) return name.trim();
-  const [, outer, inner] = m;
-  return outer === inner ? outer : `${outer} (${inner})`;
+  const s = name.trim();
+  const parts = splitTrailingParen(s);
+  if (!parts) return s;
+  const [outer, inner] = parts;
+  const squash = (x: string) => x.replace(/\s+/g, '');
+  return squash(outer) === squash(inner) ? outer : s;
 }
 
 /** Everything, newest first — used for the archive view. */
