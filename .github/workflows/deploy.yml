@@ -33,6 +33,11 @@ jobs:
 
       - run: npm ci
 
+      # Must run before the build: it is what tells Pages this repo publishes
+      # from a workflow, and the build needs its own URL settled first.
+      - uses: actions/configure-pages@v5
+        id: pages
+
       - name: Fetch KOPIS snapshot
         env:
           KOPIS_SERVICE_KEY: ${{ secrets.KOPIS_SERVICE_KEY }}
@@ -46,7 +51,7 @@ jobs:
 
       - name: Build
         env:
-          SITE_URL: ${{ steps.pages.outputs.origin || 'https://blackdawnk.github.io' }}
+          SITE_URL: https://blackdawnk.github.io
           BASE_PATH: /kstagelive
         run: npm run build
 
@@ -56,9 +61,6 @@ jobs:
 
       - name: Performance budget (NFR07/AC16)
         run: npm run check:budget
-
-      - uses: actions/configure-pages@v5
-        id: pages
 
       - uses: actions/upload-pages-artifact@v3
         with:
