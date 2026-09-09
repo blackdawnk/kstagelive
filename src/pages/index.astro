@@ -1,12 +1,15 @@
 ---
 import Base from '../layouts/Base.astro';
 import PerformanceCard from '../components/PerformanceCard.astro';
-import { loadSnapshot, upcoming, venuesWithPerformances, freshness } from '../lib/data';
+import { loadSnapshot, upcoming, startingSoon, nowRunning, venuesWithPerformances, freshness } from '../lib/data';
 import { areaEn } from '../lib/i18n/codes';
 
 const snapshot = loadSnapshot();
 const all = upcoming(snapshot);
-const soon = all.slice(0, 24);
+// "Next up" means shows that have not opened yet; a residency that began in
+// 2024 is running, not upcoming, and should not head the list.
+const soon = startingSoon(snapshot).slice(0, 24);
+const running = nowRunning(snapshot);
 const fresh = freshness(snapshot);
 const venues = venuesWithPerformances(snapshot);
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -54,8 +57,8 @@ const ticketPct = all.length ? Math.round((withTickets / all.length) * 100) : 0;
 
   <section class="wrap">
     <div class="bar">
-      <h2>Next up</h2>
-      <p class="dim freshness">Checked {fresh.checkedAtLabel}{fresh.isStale && ' · may be out of date'}</p>
+      <h2>Opening soon</h2>
+      <p class="dim freshness">{running.length.toLocaleString()} more running now · checked {fresh.checkedAtLabel}{fresh.isStale && ' · may be out of date'}</p>
     </div>
     <div class="grid">
       {soon.map((p) => <PerformanceCard performance={p} href={`${base}/performance/${p.id}`} />)}

@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { loadSnapshot, venueOf, formatDateRange } from '../../lib/data';
+import { loadSnapshot, formatDateRange, tidyVenueName } from '../../lib/data';
 import type { Performance, Venue } from '../../lib/data';
 import { areaEn, genreEn, stateEn, stateSlug } from '../../lib/i18n/codes';
 
@@ -47,7 +47,7 @@ if (p.host && p.host !== p.producer) facts.push(['Presented by', p.host]);
 
     <p class="when">{formatDateRange(p.startDate, p.endDate)}</p>
     <p class="where muted">
-      <span lang="ko">{p.venueName}</span><span class="dim"> · {areaEn(p.area)}</span>
+      <span lang="ko">{tidyVenueName(p.venueName)}</span><span class="dim"> · {areaEn(p.area)}</span>
     </p>
 
     {p.cast?.length > 0 && (

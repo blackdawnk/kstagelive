@@ -98,12 +98,55 @@ export function loadSnapshot(): Snapshot {
   return cached;
 }
 
-/** Performances that have not finished yet, soonest first. */
+const today = () => new Date().toISOString().slice(0, 10);
+
+/**
+ * Everything a visitor could still attend: not yet finished.
+ *
+ * Sorted by the date that actually matters to them — for a run that has already
+ * opened that is "it's on now", so those come first; otherwise it is the opening
+ * date. Sorting purely by start date would put a residency that opened in 2024
+ * above a concert next week, which is not what "upcoming" means to a reader.
+ */
 export function upcoming(snapshot: Snapshot): Performance[] {
-  const today = new Date().toISOString().slice(0, 10);
+  const t = today();
   return snapshot.performances
-    .filter((p) => (p.endDate ?? p.startDate ?? '') >= today)
+    .filter((p) => (p.endDate ?? p.startDate ?? '') >= t)
+    .sort((a, b) => {
+      const aRunning = (a.startDate ?? '9999') <= t;
+      const bRunning = (b.startDate ?? '9999') <= t;
+      if (aRunning !== bRunning) return aRunning ? -1 : 1;
+      // Running shows: the one closing soonest is the more urgent.
+      if (aRunning) return (a.endDate ?? '9999').localeCompare(b.endDate ?? '9999');
+      return (a.startDate ?? '9999').localeCompare(b.startDate ?? '9999');
+    });
+}
+
+/** Performances that have not opened yet, soonest first. */
+export function startingSoon(snapshot: Snapshot): Performance[] {
+  const t = today();
+  return snapshot.performances
+    .filter((p) => (p.startDate ?? '') > t)
     .sort((a, b) => (a.startDate ?? '9999').localeCompare(b.startDate ?? '9999'));
+}
+
+/** Performances running right now. */
+export function nowRunning(snapshot: Snapshot): Performance[] {
+  const t = today();
+  return snapshot.performances
+    .filter((p) => (p.startDate ?? '9999') <= t && (p.endDate ?? p.startDate ?? '') >= t)
+    .sort((a, b) => (a.endDate ?? '9999').localeCompare(b.endDate ?? '9999'));
+}
+
+/**
+ * KOPIS reports `fcltynm` as "venue (hall)", which collapses to a duplicate
+ * when a venue has a single hall of the same name — "entry55 (entry55 )".
+ */
+export function tidyVenueName(name: string): string {
+  const m = name.match(/^\s*(.+?)\s*\(\s*(.+?)\s*\)\s*$/);
+  if (!m) return name.trim();
+  const [, outer, inner] = m;
+  return outer === inner ? outer : `${outer} (${inner})`;
 }
 
 /** Everything, newest first — used for the archive view. */

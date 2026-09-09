@@ -1,6 +1,6 @@
 ---
 import type { Performance } from '../lib/data';
-import { formatDateRange } from '../lib/data';
+import { formatDateRange, tidyVenueName } from '../lib/data';
 import { areaEn, stateEn, stateSlug } from '../lib/i18n/codes';
 
 interface Props {
@@ -24,7 +24,7 @@ const slug = stateSlug(p.state);
   <p class="perf-when">{formatDateRange(p.startDate, p.endDate)}</p>
 
   <p class="perf-where muted">
-    <span lang="ko">{p.venueName}</span>
+    <span lang="ko">{tidyVenueName(p.venueName)}</span>
     {p.area && <span class="dim"> · {areaEn(p.area)}</span>}
   </p>
 

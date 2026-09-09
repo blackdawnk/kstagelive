@@ -1,0 +1,75 @@
+name: Build and deploy
+
+on:
+  push:
+    branches: [main]
+  # Refresh the data twice a day. KOPIS registers shows continuously, so the
+  # site would otherwise drift; `afterdate` keeps the read cheap.
+  schedule:
+    - cron: '0 21 * * *' # 06:00 KST
+    - cron: '0 9 * * *'  # 18:00 KST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; let a newer run finish rather than cancelling it.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Fetch KOPIS snapshot
+        env:
+          KOPIS_SERVICE_KEY: ${{ secrets.KOPIS_SERVICE_KEY }}
+        run: node scripts/sync.mjs --months-back 2 --months-ahead 5
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        env:
+          SITE_URL: ${{ steps.pages.outputs.origin || 'https://blackdawnk.github.io' }}
+          BASE_PATH: /kstagelive
+        run: npm run build
+
+      # Gates, not reports: a failure here stops the deploy.
+      - name: Compliance gate (AC08/AC09/AC12)
+        run: npm run check:compliance
+
+      - name: Performance budget (NFR07/AC16)
+        run: npm run check:budget
+
+      - uses: actions/configure-pages@v5
+        id: pages
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
