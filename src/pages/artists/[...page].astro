@@ -1,0 +1,64 @@
+---
+import Base from '../../layouts/Base.astro';
+import Pager from '../../components/Pager.astro';
+import { loadSnapshot } from '../../lib/data';
+import { buildArtistIndex, castCoverage, artistHref } from '../../lib/artist';
+import type { ArtistEntry } from '../../lib/artist';
+
+export async function getStaticPaths({ paginate }: { paginate: any }) {
+  const snapshot = loadSnapshot();
+  return paginate(buildArtistIndex(snapshot), { pageSize: 120 });
+}
+
+const { page } = Astro.props as {
+  page: { data: ArtistEntry[]; currentPage: number; lastPage: number; total: number; url: any };
+};
+
+const snapshot = loadSnapshot();
+const coverage = castCoverage(snapshot);
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<Base title="Artists — kstagelive" description="Performers appearing on Korean stages, indexed from official cast listings.">
+  <section class="wrap head">
+    <h1>Artists</h1>
+    <p class="lede muted">
+      {page.total.toLocaleString()} performers with more than one show in this snapshot,
+      indexed from official cast listings.
+    </p>
+    <p class="dim">
+      {coverage.distinctNames.toLocaleString()} names appear in total across
+      {coverage.performancesWithCast.toLocaleString()} performances
+      ({Math.round(coverage.coverage * 100)}% of the catalogue).
+      Names are shown exactly as registered — never transliterated or guessed.
+      {page.lastPage > 1 && <> Page {page.currentPage} of {page.lastPage}.</>}
+    </p>
+  </section>
+
+  <section class="wrap">
+    <ul class="artist-list">
+      {page.data.map((a) => (
+        <li>
+          <a class="artist" href={artistHref(base, a.slug)}>
+            <span lang="ko" class="aname">{a.name}</span>
+            <span class="chip">{a.performances.length}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+    <Pager page={page} label="Artists" />
+  </section>
+</Base>
+
+<style>
+  .head { padding-block: 48px 24px; }
+  .lede { max-width: 62ch; font-size: 1.02rem; margin-block: 0 0.4rem; }
+  .head .dim { font-size: 0.88rem; max-width: 66ch; }
+  .artist-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); }
+  .artist { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 10px 14px; text-decoration: none; color: var(--text); }
+  .artist:hover { border-color: var(--neon-purple); color: var(--neon-cyan); }
+  .aname { font-weight: 600; word-break: keep-all; font-size: 0.93rem; }
+</style>

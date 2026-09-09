@@ -1,0 +1,147 @@
+---
+import Base from '../layouts/Base.astro';
+import PerformanceCard from '../components/PerformanceCard.astro';
+import { loadSnapshot, upcoming, venuesWithPerformances, freshness } from '../lib/data';
+import { areaEn } from '../lib/i18n/codes';
+
+const snapshot = loadSnapshot();
+const all = upcoming(snapshot);
+const soon = all.slice(0, 24);
+const fresh = freshness(snapshot);
+const venues = venuesWithPerformances(snapshot);
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const areaCounts = new Map<string, number>();
+for (const p of all) if (p.area) areaCounts.set(p.area, (areaCounts.get(p.area) ?? 0) + 1);
+const areas = [...areaCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12);
+
+const withTickets = all.filter((p) => p.ticketLinks?.length > 0).length;
+const ticketPct = all.length ? Math.round((withTickets / all.length) * 100) : 0;
+---
+
+<Base
+  title="kstagelive — live performances in Korea, in English"
+  description="Every registered popular-music performance in Korea, in English: venue details, accessibility and official ticket links."
+>
+  <section class="wrap hero">
+    <h1>
+      Live in Korea.<br /><span class="gradient-text">Every stage, in English.</span>
+    </h1>
+    <p class="lede muted">
+      Concerts, fan meetings and festivals across Korea — with venue details, accessibility
+      information and official ticket links.
+    </p>
+    <p class="src dim">
+      Built on KOPIS, Korea's statutory performance database. Registration is required by law,
+      so a 200-seat club night sits in the same list as an arena tour.
+    </p>
+
+    <div class="stats">
+      <a class="stat" href={`${base}/performances`}>
+        <span class="stat-n">{all.length.toLocaleString()}</span>
+        <span class="stat-l dim">upcoming performances</span>
+      </a>
+      <a class="stat" href={`${base}/venues`}>
+        <span class="stat-n">{venues.length.toLocaleString()}</span>
+        <span class="stat-l dim">venues</span>
+      </a>
+      <span class="stat">
+        <span class="stat-n">{ticketPct}%</span>
+        <span class="stat-l dim">with an official ticket link</span>
+      </span>
+    </div>
+  </section>
+
+  <section class="wrap">
+    <div class="bar">
+      <h2>Next up</h2>
+      <p class="dim freshness">Checked {fresh.checkedAtLabel}{fresh.isStale && ' · may be out of date'}</p>
+    </div>
+    <div class="grid">
+      {soon.map((p) => <PerformanceCard performance={p} href={`${base}/performance/${p.id}`} />)}
+    </div>
+    <p class="more">
+      <a class="btn" href={`${base}/performances`}>See all {all.length.toLocaleString()} performances →</a>
+    </p>
+  </section>
+
+  <section class="wrap block">
+    <h2>Browse by region</h2>
+    <nav class="areas" aria-label="Regions">
+      {areas.map(([area, count]) => (
+        <a class="chip area-chip" href={`${base}/region/${encodeURIComponent(area)}`}>
+          {areaEn(area)} <span class="dim">{count}</span>
+        </a>
+      ))}
+    </nav>
+  </section>
+
+  <section class="wrap block">
+    <h2>What this does — and doesn't</h2>
+    <div class="grid two">
+      <article class="card">
+        <h3>Complete, not curated</h3>
+        <p class="muted">
+          Every ticketed performance is in the statutory record, so nothing is filtered out
+          for being small or regional.
+        </p>
+      </article>
+      <article class="card">
+        <h3>Venue detail that travels</h3>
+        <p class="muted">
+          Capacity, halls, wheelchair seating and map links that work in Korea — where Google
+          Maps can't give driving directions.
+        </p>
+      </article>
+      <article class="card">
+        <h3>Links, not transactions</h3>
+        <p class="muted">
+          We point at the seller the organiser named. No ticket sales, no payments, no accounts.
+        </p>
+      </article>
+      <article class="card">
+        <h3>No on-sale alerts</h3>
+        <p class="muted">
+          KOPIS registers a show only after sales begin, so this site can't tell you when
+          tickets drop. We'd rather say so than pretend.
+        </p>
+      </article>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .hero { padding-block: 64px 30px; }
+  .lede { font-size: clamp(1.02rem, 2vw, 1.2rem); max-width: 60ch; margin-block: 0 0.7rem; }
+  .src { max-width: 62ch; font-size: 0.9rem; }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .stat {
+    display: flex; flex-direction: column; gap: 2px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 20px; text-decoration: none; min-width: 150px;
+  }
+  a.stat:hover { border-color: var(--neon-purple); }
+  .stat-n { font-size: 1.7rem; font-weight: 800; color: var(--neon-cyan); line-height: 1.1; }
+  .stat-l { font-size: 0.82rem; }
+
+  .bar { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
+  .bar h2 { margin: 0; }
+  .freshness { font-size: 0.85rem; }
+
+  .more { margin-top: 26px; }
+  .btn {
+    display: inline-block; padding: 12px 22px; border-radius: var(--radius-sm);
+    background: var(--grad-stage); color: #12001a; font-weight: 750; text-decoration: none;
+  }
+  .btn:hover { filter: brightness(1.12); color: #12001a; }
+
+  .block { margin-top: 52px; }
+  .areas { display: flex; flex-wrap: wrap; gap: 8px; }
+  .area-chip { text-decoration: none; }
+  .area-chip:hover { color: var(--text); border-color: var(--neon-purple); }
+
+  .grid.two { grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+  .grid.two h3 { margin-bottom: 6px; }
+  .grid.two p { margin: 0; font-size: 0.9rem; }
+</style>

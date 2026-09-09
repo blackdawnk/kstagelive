@@ -1,0 +1,69 @@
+---
+import Base from '../../layouts/Base.astro';
+import PerformanceCard from '../../components/PerformanceCard.astro';
+import Pager from '../../components/Pager.astro';
+import { loadSnapshot, upcoming, freshness } from '../../lib/data';
+import type { Performance } from '../../lib/data';
+import { areaEn } from '../../lib/i18n/codes';
+
+export const PAGE_SIZE = 48;
+
+export async function getStaticPaths({ paginate }: { paginate: any }) {
+  const snapshot = loadSnapshot();
+  return paginate(upcoming(snapshot), { pageSize: PAGE_SIZE });
+}
+
+const { page } = Astro.props as {
+  page: { data: Performance[]; currentPage: number; lastPage: number; total: number; url: any };
+};
+
+const snapshot = loadSnapshot();
+const fresh = freshness(snapshot);
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const areaCounts = new Map<string, number>();
+for (const p of upcoming(snapshot)) {
+  if (p.area) areaCounts.set(p.area, (areaCounts.get(p.area) ?? 0) + 1);
+}
+const areas = [...areaCounts.entries()].sort((a, b) => b[1] - a[1]);
+---
+
+<Base
+  title={`Upcoming performances${page.currentPage > 1 ? ` — page ${page.currentPage}` : ''} — kstagelive`}
+  description="Every upcoming registered popular-music performance in Korea, listed in English."
+>
+  <section class="wrap head">
+    <h1>Upcoming performances</h1>
+    <p class="lede muted">
+      {page.total.toLocaleString()} performances registered across {areas.length} regions.
+      Page {page.currentPage} of {page.lastPage}.
+    </p>
+    <p class="dim">Checked {fresh.checkedAtLabel}{fresh.isStale && ' · data may be out of date'}</p>
+
+    <nav class="areas" aria-label="Browse by region">
+      {areas.map(([area, count]) => (
+        <a class="chip area-chip" href={`${base}/region/${encodeURIComponent(area)}`}>
+          {areaEn(area)} <span class="dim">{count}</span>
+        </a>
+      ))}
+    </nav>
+  </section>
+
+  <section class="wrap">
+    <div class="grid">
+      {page.data.map((p) => (
+        <PerformanceCard performance={p} href={`${base}/performance/${p.id}`} />
+      ))}
+    </div>
+    <Pager page={page} label="Performances" />
+  </section>
+</Base>
+
+<style>
+  .head { padding-block: 48px 24px; }
+  .lede { max-width: 62ch; font-size: 1.02rem; margin-block: 0 0.4rem; }
+  .head .dim { font-size: 0.85rem; }
+  .areas { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .area-chip { text-decoration: none; }
+  .area-chip:hover { color: var(--text); border-color: var(--neon-purple); }
+</style>

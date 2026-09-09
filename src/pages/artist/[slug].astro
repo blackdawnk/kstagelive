@@ -1,0 +1,48 @@
+---
+import Base from '../../layouts/Base.astro';
+import PerformanceCard from '../../components/PerformanceCard.astro';
+import { loadSnapshot } from '../../lib/data';
+import type { Performance } from '../../lib/data';
+import { buildArtistIndex } from '../../lib/artist';
+
+export async function getStaticPaths() {
+  const snapshot = loadSnapshot();
+  return buildArtistIndex(snapshot).map((a) => ({
+    params: { slug: a.slug },
+    props: { name: a.name, performances: a.performances },
+  }));
+}
+
+interface Props { name: string; performances: Performance[] }
+const { name, performances } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const venues = new Set(performances.map((p) => p.venueName).filter(Boolean));
+---
+
+<Base title={`${name} — kstagelive`} description={`Performances featuring ${name} in Korea.`}>
+  <section class="wrap head">
+    <p class="crumbs dim"><a href={`${base}/artists`}>Artists</a></p>
+    <h1 lang="ko">{name}</h1>
+    <p class="muted">
+      {performances.length} performance{performances.length > 1 ? 's' : ''} across {venues.size} venue{venues.size > 1 ? 's' : ''}.
+    </p>
+    <p class="dim">
+      Listed because this name appears in the official cast record. It may refer to more than
+      one person — we match the registered string exactly rather than guessing identity.
+    </p>
+  </section>
+  <section class="wrap">
+    <div class="grid">
+      {performances.map((p) => <PerformanceCard performance={p} href={`${base}/performance/${p.id}`} />)}
+    </div>
+  </section>
+</Base>
+
+<style>
+  .head { padding-block: 44px 24px; }
+  .crumbs { font-size: 0.85rem; margin-bottom: 12px; }
+  .crumbs a { color: var(--text-muted); text-decoration: none; }
+  .crumbs a:hover { color: var(--neon-cyan); }
+  .head h1 { word-break: keep-all; }
+  .head .dim { font-size: 0.87rem; max-width: 64ch; margin-top: 8px; }
+</style>

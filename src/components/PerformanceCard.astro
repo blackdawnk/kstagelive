@@ -1,0 +1,73 @@
+---
+import type { Performance } from '../lib/data';
+import { formatDateRange } from '../lib/data';
+import { areaEn, stateEn, stateSlug } from '../lib/i18n/codes';
+
+interface Props {
+  performance: Performance;
+  href: string;
+}
+
+const { performance: p, href } = Astro.props;
+const slug = stateSlug(p.state);
+---
+
+<article class="perf">
+  <a class="perf-link" href={href}>
+    {/*
+      AC15 — the title stays in Korean on purpose. A visitor needs the original
+      string to search for it on a Korean ticket site.
+    */}
+    <h3 class="perf-title" lang="ko">{p.title}</h3>
+  </a>
+
+  <p class="perf-when">{formatDateRange(p.startDate, p.endDate)}</p>
+
+  <p class="perf-where muted">
+    <span lang="ko">{p.venueName}</span>
+    {p.area && <span class="dim"> · {areaEn(p.area)}</span>}
+  </p>
+
+  <p class="perf-tags">
+    {/* Status carries a text label, never colour alone (NFR08). */}
+    <span class={`chip status-${slug}`}>{stateEn(p.state) || 'Status unknown'}</span>
+    {p.isFestival && <span class="chip">Festival</span>}
+    {p.isVisiting && <span class="chip">International act</span>}
+    {p.openRun && <span class="chip">Open run</span>}
+    {p.ticketLinks?.length > 0 && <span class="chip chip-ticket">Ticket link</span>}
+  </p>
+</article>
+
+<style>
+  .perf {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .perf:hover { border-color: var(--neon-purple); }
+
+  .perf-link { text-decoration: none; }
+  .perf-title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 650;
+    color: var(--text);
+    line-height: 1.35;
+    word-break: keep-all;
+  }
+  .perf-link:hover .perf-title { color: var(--neon-cyan); }
+
+  .perf-when { margin: 2px 0 0; font-weight: 600; color: var(--neon-cyan); font-size: 0.92rem; }
+  .perf-where { margin: 0; font-size: 0.9rem; }
+  .perf-tags { margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
+
+  /* Colour reinforces the label; the label is the source of truth. */
+  .status-upcoming { border-color: color-mix(in srgb, var(--status-upcoming) 45%, var(--border)); color: var(--status-upcoming); }
+  .status-running { border-color: color-mix(in srgb, var(--status-running) 45%, var(--border)); color: var(--status-running); }
+  .status-ended { color: var(--status-ended); }
+  .chip-ticket { border-color: color-mix(in srgb, var(--neon-pink) 45%, var(--border)); color: var(--neon-pink); }
+</style>

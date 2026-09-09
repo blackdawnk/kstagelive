@@ -1,0 +1,108 @@
+---
+/**
+ * Pagination control.
+ *
+ * Plain anchors, no JS: paging must work with scripting disabled (AC16), and
+ * it is also what keeps each listing page inside the 100KB budget (NFR07).
+ */
+interface Props {
+  page: {
+    url: { prev?: string; next?: string; current: string };
+    currentPage: number;
+    lastPage: number;
+    total: number;
+  };
+  label: string;
+}
+
+const { page, label } = Astro.props;
+
+/** Show first, last, current and its neighbours; elide the rest. */
+function pageNumbers(current: number, last: number): Array<number | '…'> {
+  const keep = new Set([1, last, current - 1, current, current + 1]);
+  const out: Array<number | '…'> = [];
+  let gap = false;
+  for (let i = 1; i <= last; i += 1) {
+    if (keep.has(i)) {
+      out.push(i);
+      gap = false;
+    } else if (!gap) {
+      out.push('…');
+      gap = true;
+    }
+  }
+  return out;
+}
+
+const base = page.url.current.replace(/\/\d+\/?$/, '').replace(/\/$/, '');
+const hrefFor = (n: number) => (n === 1 ? `${base}` : `${base}/${n}`);
+const numbers = page.lastPage > 1 ? pageNumbers(page.currentPage, page.lastPage) : [];
+---
+
+{page.lastPage > 1 && (
+  <nav class="pager" aria-label={`${label} pagination`}>
+    {page.url.prev ? (
+      <a class="step" href={page.url.prev} rel="prev">← Previous</a>
+    ) : (
+      <span class="step is-off" aria-hidden="true">← Previous</span>
+    )}
+
+    <ol class="nums">
+      {numbers.map((n) =>
+        n === '…' ? (
+          <li class="ellipsis" aria-hidden="true">…</li>
+        ) : (
+          <li>
+            {n === page.currentPage ? (
+              <span class="num is-current" aria-current="page">{n}</span>
+            ) : (
+              <a class="num" href={hrefFor(n)}>{n}</a>
+            )}
+          </li>
+        ),
+      )}
+    </ol>
+
+    {page.url.next ? (
+      <a class="step" href={page.url.next} rel="next">Next →</a>
+    ) : (
+      <span class="step is-off" aria-hidden="true">Next →</span>
+    )}
+  </nav>
+)}
+
+<style>
+  .pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 40px 0 8px;
+  }
+  .step, .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  a.step:hover, a.num:hover { color: var(--text); border-color: var(--neon-purple); }
+  .is-off { opacity: 0.35; }
+  .is-current {
+    background: var(--neon-cyan);
+    border-color: var(--neon-cyan);
+    color: var(--bg);
+    font-weight: 750;
+  }
+  .nums { display: flex; gap: 6px; list-style: none; padding: 0; margin: 0; flex-wrap: wrap; }
+  .ellipsis { color: var(--text-dim); padding: 0 2px; align-self: center; }
+</style>

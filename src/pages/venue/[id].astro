@@ -1,0 +1,207 @@
+---
+import Base from '../../layouts/Base.astro';
+import PerformanceCard from '../../components/PerformanceCard.astro';
+import { loadSnapshot, performancesAtVenue } from '../../lib/data';
+import type { Performance, Venue } from '../../lib/data';
+import { facilityKindEn } from '../../lib/i18n/codes';
+import { mapLinks } from '../../lib/maps/links';
+
+export async function getStaticPaths() {
+  const snapshot = loadSnapshot();
+  return Object.values(snapshot.venues).map((venue) => ({
+    params: { id: venue.id },
+    props: { venue, performances: performancesAtVenue(snapshot, venue.id) },
+  }));
+}
+
+interface Props {
+  venue: Venue;
+  performances: Performance[];
+}
+
+const { venue: v, performances } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const maps = mapLinks(v.lat, v.lon, v.name);
+
+const AMENITY_LABELS: Array<[keyof typeof v.amenities, string]> = [
+  ['restaurant', 'Restaurant'],
+  ['cafe', 'Café'],
+  ['store', 'Convenience store'],
+  ['parking', 'Parking'],
+  ['nursingRoom', 'Nursing room'],
+  ['playRoom', 'Play room'],
+];
+
+const ACCESS_LABELS: Array<[keyof typeof v.accessibility, string]> = [
+  ['parking', 'Accessible parking'],
+  ['restroom', 'Accessible restroom'],
+  ['ramp', 'Ramp'],
+  ['elevator', 'Lift'],
+];
+
+const wheelchairHalls = v.halls.filter((h) => h.wheelchairSeats != null);
+const anyAccessKnown = ACCESS_LABELS.some(([k]) => v.accessibility[k] === 'yes');
+---
+
+<Base title={`${v.name} — kstagelive`} description={`${v.name}: capacity, access and upcoming performances.`}>
+  <article class="wrap detail">
+    <p class="crumbs dim"><a href={`${base}/venues`}>Venues</a></p>
+
+    <h1 lang="ko" class="title">{v.name}</h1>
+    {v.address && <p class="addr muted" lang="ko">{v.address}</p>}
+
+    <p class="tags">
+      {v.kind && <span class="chip">{facilityKindEn(v.kind)}</span>}
+      {v.seatCount && <span class="chip">{v.seatCount.toLocaleString()} seats</span>}
+      {v.hallCount && <span class="chip">{v.hallCount} halls</span>}
+      {v.openedYear && <span class="chip">Opened {v.openedYear}</span>}
+    </p>
+
+    <section class="block">
+      <h2>Getting there</h2>
+      {maps ? (
+        <>
+          <p class="map-links">
+            {/* AC19 — plain links. Nothing is fetched from a map service. */}
+            <a class="btn" href={maps.naver} rel="noopener nofollow external" target="_blank">Naver Map</a>
+            <a class="btn btn-ghost" href={maps.google} rel="noopener nofollow external" target="_blank">Google Maps</a>
+          </p>
+          <p class="dim mono">{maps.coords}</p>
+          <p class="note dim">
+            In Korea, Google Maps cannot provide driving directions — mapping data cannot be
+            exported. Naver Map or Kakao Map is what people here actually navigate with.
+          </p>
+        </>
+      ) : (
+        <p class="dim">No coordinates recorded for this venue.</p>
+      )}
+      {(v.phone || v.homepage) && (
+        <p class="contact dim">
+          {v.phone && <span class="mono">{v.phone}</span>}
+          {v.phone && v.homepage && ' · '}
+          {v.homepage && <a href={v.homepage} rel="noopener nofollow external" target="_blank">Official site</a>}
+        </p>
+      )}
+    </section>
+
+    <section class="block">
+      <h2>Accessibility</h2>
+      {/*
+        AC18 / SP05 §6 — KOPIS returns `N` for venues that plainly do have step-free
+        access, so `N` means "not reported", not "absent". We show only confirmed
+        features and never assert that something is missing.
+      */}
+      <ul class="flags">
+        {ACCESS_LABELS.map(([key, label]) => (
+          <li class={`flag flag-${v.accessibility[key]}`}>
+            <span class="flag-mark" aria-hidden="true">{v.accessibility[key] === 'yes' ? '✓' : '–'}</span>
+            {label}: <strong>{v.accessibility[key] === 'yes' ? 'Confirmed' : 'Not reported'}</strong>
+          </li>
+        ))}
+      </ul>
+
+      {wheelchairHalls.length > 0 && (
+        <p class="muted">
+          Wheelchair seating is recorded for {wheelchairHalls.length} hall{wheelchairHalls.length > 1 ? 's' : ''}
+          {' '}(see below).
+        </p>
+      )}
+
+      <p class="note dim">
+        {anyAccessKnown
+          ? 'Features marked “Not reported” are simply absent from the source data — they may still exist.'
+          : 'KOPIS holds no accessibility record for this venue. That is a gap in the data, not evidence that facilities are missing.'}
+        {' '}Please confirm with the venue directly{v.phone ? ` (${v.phone})` : ''} before travelling.
+      </p>
+    </section>
+
+    {v.halls.length > 0 && (
+      <section class="block">
+        <h2>Halls</h2>
+        <div class="halls">
+          {v.halls.map((h) => (
+            <div class="card hall">
+              <h3 lang="ko">{h.name}</h3>
+              <p class="dim">
+                {h.seatCount ? `${h.seatCount.toLocaleString()} seats` : 'Capacity not recorded'}
+                {h.wheelchairSeats != null && <> · {h.wheelchairSeats} wheelchair seats</>}
+              </p>
+              {h.stageArea && <p class="dim mono">Stage {h.stageArea} m</p>}
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <section class="block">
+      <h2>Performances here ({performances.length})</h2>
+      <div class="grid">
+        {performances.map((p) => (
+          <PerformanceCard performance={p} href={`${base}/performance/${p.id}`} />
+        ))}
+      </div>
+    </section>
+
+    <section class="block">
+      <h2>Amenities</h2>
+      <ul class="flags">
+        {AMENITY_LABELS.map(([key, label]) => (
+          <li class={`flag flag-${v.amenities[key]}`}>
+            <span class="flag-mark" aria-hidden="true">
+              {v.amenities[key] === 'yes' ? '✓' : v.amenities[key] === 'no' ? '✕' : '–'}
+            </span>
+            {label}: <strong>{v.amenities[key] === 'yes' ? 'Yes' : v.amenities[key] === 'no' ? 'No' : 'Not reported'}</strong>
+          </li>
+        ))}
+      </ul>
+    </section>
+  </article>
+</Base>
+
+<style>
+  .detail { padding-block: 36px 24px; max-width: 900px; }
+  .crumbs { font-size: 0.85rem; margin-bottom: 14px; }
+  .crumbs a { color: var(--text-muted); text-decoration: none; }
+  .crumbs a:hover { color: var(--neon-cyan); }
+
+  .title { font-size: clamp(1.7rem, 4.5vw, 2.4rem); margin-bottom: 6px; word-break: keep-all; }
+  .addr { margin: 0 0 14px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+
+  .block { margin-top: 34px; }
+  .block h2 { font-size: 1.15rem; margin-bottom: 12px; }
+
+  .map-links { display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 8px; }
+  .btn {
+    display: inline-block;
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    background: var(--grad-stage);
+    color: #12001a;
+    font-weight: 750;
+    text-decoration: none;
+  }
+  .btn:hover { filter: brightness(1.12); color: #12001a; }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn-ghost:hover { border-color: var(--neon-cyan); color: var(--neon-cyan); filter: none; }
+
+  .note { font-size: 0.85rem; max-width: 68ch; margin-top: 10px; }
+  .contact { font-size: 0.88rem; margin-top: 10px; }
+
+  .flags { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 6px; }
+  .flag { font-size: 0.92rem; color: var(--text-muted); }
+  /* The tick/dash is redundant with the word, so meaning never rests on colour. */
+  .flag-mark { display: inline-block; width: 1.2em; font-weight: 700; }
+  .flag-yes { color: var(--text); }
+  .flag-yes .flag-mark { color: var(--status-running); }
+  .flag-unknown .flag-mark, .flag-no .flag-mark { color: var(--text-dim); }
+  .flag strong { font-weight: 650; }
+
+  .halls { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
+  .hall h3 { font-size: 0.98rem; margin-bottom: 4px; }
+  .hall p { margin: 2px 0; font-size: 0.85rem; }
+</style>

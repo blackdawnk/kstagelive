@@ -1,0 +1,58 @@
+---
+import Base from '../../../layouts/Base.astro';
+import PerformanceCard from '../../../components/PerformanceCard.astro';
+import Pager from '../../../components/Pager.astro';
+import { loadSnapshot, upcoming } from '../../../lib/data';
+import type { Performance } from '../../../lib/data';
+import { areaEn } from '../../../lib/i18n/codes';
+
+export async function getStaticPaths({ paginate }: { paginate: any }) {
+  const snapshot = loadSnapshot();
+  const all = upcoming(snapshot);
+  const byArea = new Map<string, Performance[]>();
+  for (const p of all) {
+    if (!p.area) continue;
+    if (!byArea.has(p.area)) byArea.set(p.area, []);
+    byArea.get(p.area)!.push(p);
+  }
+  return [...byArea.entries()].flatMap(([area, list]) =>
+    paginate(list, { params: { area }, pageSize: 48, props: { area } }),
+  );
+}
+
+const { page, area } = Astro.props as {
+  page: { data: Performance[]; currentPage: number; lastPage: number; total: number; url: any };
+  area: string;
+};
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const label = areaEn(area);
+---
+
+<Base title={`Performances in ${label} — kstagelive`} description={`Upcoming live performances in ${label}, Korea.`}>
+  <section class="wrap head">
+    <p class="crumbs dim"><a href={`${base}/performances`}>All performances</a></p>
+    <h1>{label}</h1>
+    <p class="muted">
+      {page.total.toLocaleString()} upcoming performance{page.total > 1 ? 's' : ''}
+      {page.lastPage > 1 && <> · page {page.currentPage} of {page.lastPage}</>}
+    </p>
+    <p class="dim" lang="ko">{area}</p>
+  </section>
+
+  <section class="wrap">
+    <div class="grid">
+      {page.data.map((p) => (
+        <PerformanceCard performance={p} href={`${base}/performance/${p.id}`} />
+      ))}
+    </div>
+    <Pager page={page} label={label} />
+  </section>
+</Base>
+
+<style>
+  .head { padding-block: 44px 22px; }
+  .crumbs { font-size: 0.85rem; margin-bottom: 12px; }
+  .crumbs a { color: var(--text-muted); text-decoration: none; }
+  .crumbs a:hover { color: var(--neon-cyan); }
+  .head .dim { font-size: 0.85rem; }
+</style>

@@ -1,0 +1,77 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'Korean live-performance data, in English.' } = Astro.props;
+
+const base = import.meta.env.BASE_URL;
+/** Join the configured base path with a route so links work on a project site and a custom domain alike. */
+const href = (path: string) => `${base.replace(/\/$/, '')}/${path.replace(/^\//, '')}`.replace(/\/+$/, '') || '/';
+
+const nav = [
+  { path: '/', label: 'Performances' },
+  { path: '/venues', label: 'Venues' },
+  { path: '/artists', label: 'Artists' },
+  { path: '/stats', label: 'Charts' },
+];
+
+const current = Astro.url.pathname.replace(/\/+$/, '');
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎤</text></svg>" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href={href('/')}>k<span class="gradient-text">stage</span>live</a>
+        <nav class="site-nav" aria-label="Primary">
+          {nav.map((item) => {
+            const target = href(item.path);
+            const isCurrent = current === target.replace(/\/+$/, '');
+            return (
+              <a href={target} aria-current={isCurrent ? 'page' : undefined}>{item.label}</a>
+            );
+          })}
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        {/*
+          AC12 — KOPIS attribution is required by the API terms of use and is
+          verified at build time by scripts/check-compliance.mjs. Do not remove
+          or reword the KOPIS source line without checking that script.
+        */}
+        <p class="attribution" data-kopis-attribution>
+          Performance data provided by <strong>KOPIS</strong> (Korea Performing Arts Box Office
+          Information System), operated by the Korea Arts Management Service.
+          <br />
+          공연예술통합전산망(<a href="https://www.kopis.or.kr" rel="noopener">KOPIS</a>)의 공연 정보를 활용하였습니다.
+        </p>
+        <p class="dim">
+          kstagelive lists performances and links to official ticket sellers.
+          It does not sell tickets, process payments, or handle bookings.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.astro/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.playwright-mcp/
+data/snapshots/*.json
+!data/snapshots/.gitkeep
+
+# Internal planning records: contain local paths and notes on unrelated
+# projects. Kept out of the public repo; the reasoning that matters to
+# contributors is summarised in README.md.
+docs/
+HANDOFF-*.md

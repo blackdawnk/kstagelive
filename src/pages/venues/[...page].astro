@@ -1,0 +1,82 @@
+---
+import Base from '../../layouts/Base.astro';
+import Pager from '../../components/Pager.astro';
+import { loadSnapshot, venuesWithPerformances } from '../../lib/data';
+import type { Venue } from '../../lib/data';
+import { facilityKindEn } from '../../lib/i18n/codes';
+import { mapLinks } from '../../lib/maps/links';
+
+type VenueWithCount = Venue & { count: number };
+
+export async function getStaticPaths({ paginate }: { paginate: any }) {
+  const snapshot = loadSnapshot();
+  return paginate(venuesWithPerformances(snapshot), { pageSize: 60 });
+}
+
+const { page } = Astro.props as {
+  page: { data: VenueWithCount[]; currentPage: number; lastPage: number; total: number; url: any };
+};
+
+const snapshot = loadSnapshot();
+const all = venuesWithPerformances(snapshot);
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const withCoords = all.filter((v) => v.lat != null).length;
+const withWheelchair = all.filter((v) => v.halls.some((h) => h.wheelchairSeats != null)).length;
+---
+
+<Base title="Venues — kstagelive" description="Korean live-music venues: capacity, halls, accessibility and how to get there.">
+  <section class="wrap head">
+    <h1>Venues</h1>
+    <p class="lede muted">
+      {all.length.toLocaleString()} venues hosting performances in this snapshot — capacity,
+      hall breakdowns, and map links that work in Korea.
+    </p>
+    <p class="dim">
+      {withCoords} have coordinates · {withWheelchair} report wheelchair seating
+      {page.lastPage > 1 && <> · page {page.currentPage} of {page.lastPage}</>}
+    </p>
+  </section>
+
+  <section class="wrap">
+    <div class="grid">
+      {page.data.map((v) => {
+        const maps = mapLinks(v.lat, v.lon, v.name);
+        const wheelchair = v.halls.reduce((n, h) => n + (h.wheelchairSeats ?? 0), 0);
+        return (
+          <article class="card venue">
+            <h2 class="vname">
+              <a href={`${base}/venue/${v.id}`} lang="ko">{v.name}</a>
+            </h2>
+            <p class="meta dim">
+              {facilityKindEn(v.kind)}
+              {v.seatCount && <> · {v.seatCount.toLocaleString()} seats</>}
+              {v.hallCount && <> · {v.hallCount} halls</>}
+            </p>
+            <p class="tags">
+              <span class="chip">{v.count} performance{v.count > 1 ? 's' : ''}</span>
+              {wheelchair > 0 && <span class="chip chip-access">{wheelchair} wheelchair seats</span>}
+              {maps && <span class="chip">Map</span>}
+            </p>
+          </article>
+        );
+      })}
+    </div>
+    <Pager page={page} label="Venues" />
+  </section>
+</Base>
+
+<style>
+  .head { padding-block: 48px 24px; }
+  .lede { max-width: 62ch; font-size: 1.02rem; margin-block: 0 0.4rem; }
+  .head .dim { font-size: 0.88rem; }
+
+  .venue { display: flex; flex-direction: column; gap: 6px; }
+  .venue:hover { border-color: var(--neon-purple); }
+  .vname { font-size: 1rem; margin: 0; line-height: 1.35; }
+  .vname a { color: var(--text); text-decoration: none; word-break: keep-all; }
+  .vname a:hover { color: var(--neon-cyan); }
+  .meta { font-size: 0.85rem; margin: 0; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
+  .chip-access { border-color: color-mix(in srgb, var(--status-running) 45%, var(--border)); color: var(--status-running); }
+</style>

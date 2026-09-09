@@ -1,0 +1,28 @@
+{
+  "name": "kstagelive",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Korean live-performance data, in English. Powered by KOPIS.",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check:compliance": "node scripts/check-compliance.mjs",
+    "check:budget": "node scripts/check-budget.mjs",
+    "verify": "npm run typecheck && npm test && npm run build && npm run check:compliance && npm run check:budget"
+  },
+  "dependencies": {
+    "astro": "^7.3.2",
+    "fast-xml-parser": "^5.11.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@types/node": "^26.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  }
+}
