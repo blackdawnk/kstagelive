@@ -10,7 +10,15 @@
  */
 import { XMLParser } from 'fast-xml-parser';
 
-const BASE = 'http://www.kopis.or.kr/openApi/restful';
+/**
+ * HTTPS, no `www`.
+ *
+ * The developer guide documents `http://www.kopis.or.kr/...`, but plain HTTP now
+ * answers `400 Request Blocked` — the block appeared partway through 2026-09-10
+ * and took a scheduled build down with it. The www host redirects to the apex,
+ * so this address avoids a hop as well.
+ */
+const BASE = 'https://kopis.or.kr/openApi/restful';
 
 export const MAX_WINDOW_DAYS = 31;
 export const MAX_ROWS = 100;
@@ -36,6 +44,14 @@ export class KopisError extends Error {
   constructor(code, message) {
     super(`KOPIS ${code}: ${message}`);
     this.code = code;
+  }
+}
+
+/** An HTTP status the server will keep rejecting — retrying cannot help. */
+export class KopisHttpError extends Error {
+  constructor(status, url) {
+    super(`HTTP ${status} for ${url}`);
+    this.status = status;
   }
 }
 
@@ -95,6 +111,9 @@ async function request(path, params, { serviceKey, retries = 3, timeoutMs = 2000
     try {
       const res = await fetch(url, { signal: controller.signal });
       clearTimeout(timer);
+      // 4xx is a verdict, not a hiccup: retrying wastes three round trips and
+      // buries the real cause. 5xx and network faults still get retried below.
+      if (res.status >= 400 && res.status < 500) throw new KopisHttpError(res.status, safeUrl);
       if (!res.ok) throw new Error(`HTTP ${res.status} for ${safeUrl}`);
       const xml = await res.text();
       const doc = parser.parse(xml);
@@ -108,8 +127,8 @@ async function request(path, params, { serviceKey, retries = 3, timeoutMs = 2000
       return { empty: false, doc };
     } catch (err) {
       clearTimeout(timer);
-      // A rejected key or bad parameter will not fix itself — stop immediately.
-      if (err instanceof KopisError) throw err;
+      // A rejected key, bad parameter or 4xx will not fix itself — stop now.
+      if (err instanceof KopisError || err instanceof KopisHttpError) throw err;
       lastError = err;
       if (attempt < retries) {
         await new Promise((r) => setTimeout(r, 500 * attempt));
@@ -129,11 +148,22 @@ export const asArray = (v) => (v == null ? [] : Array.isArray(v) ? v : [v]);
 export async function fetchPerformanceWindow({ stdate, eddate, extra = {}, serviceKey, onPage }) {
   const rows = [];
   for (let page = 1; ; page += 1) {
-    const { empty, doc } = await request(
-      'pblprfr',
-      { stdate, eddate, cpage: String(page), rows: String(MAX_ROWS), ...extra },
-      { serviceKey },
-    );
+    let result;
+    try {
+      result = await request(
+        'pblprfr',
+        { stdate, eddate, cpage: String(page), rows: String(MAX_ROWS), ...extra },
+        { serviceKey },
+      );
+    } catch (err) {
+      // KOPIS answers 400 for a page past the end of the result set, which is
+      // reached exactly when the total is a multiple of the page size. Treat
+      // that as the end of paging — but only after page 1, where a 400 really
+      // would mean a bad request.
+      if (err instanceof KopisHttpError && err.status === 400 && page > 1) break;
+      throw err;
+    }
+    const { empty, doc } = result;
     if (empty) break;
     const batch = asArray(doc?.dbs?.db);
     rows.push(...batch);
