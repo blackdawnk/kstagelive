@@ -6,16 +6,22 @@ import type { Performance } from '../../../../lib/data';
 import { buildIdolIndex, soloistByName } from '../../../../lib/idol';
 import type { Group } from '../../../../lib/idol';
 
+/**
+ * A page for every known member, not only those with solo dates.
+ *
+ * A fan looking up a member expects to land somewhere even when that member has
+ * no solo show — the group's schedule and line-up is still the answer they need.
+ */
 export async function getStaticPaths() {
   const snapshot = loadSnapshot();
   const { groups } = buildIdolIndex(snapshot);
   return groups.flatMap((e) =>
-    [...e.memberPerformances.entries()].map(([name, list]) => ({
+    e.members.map((name) => ({
       params: { id: e.group.id, name },
       props: {
         group: e.group,
         name,
-        performances: list,
+        performances: e.memberPerformances.get(name) ?? [],
         groupPerformances: e.groupPerformances,
         siblings: e.members.filter((m) => m !== name),
       },
@@ -57,18 +63,30 @@ const venues = new Set(performances.map((p) => p.venueName).filter(Boolean));
     </p>
 
     <p class="tags">
-      <span class="chip chip-solo">{performances.length} solo/unit show{performances.length > 1 ? 's' : ''}</span>
+      {performances.length > 0 ? (
+        <span class="chip chip-solo">{performances.length} solo/unit show{performances.length > 1 ? 's' : ''}</span>
+      ) : (
+        <span class="chip">No solo dates</span>
+      )}
       {venues.size > 0 && <span class="chip">{venues.size} venue{venues.size > 1 ? 's' : ''}</span>}
       <span class="chip">{group.agency}</span>
     </p>
 
     <section class="block">
       <h2>Solo &amp; unit</h2>
-      <div class="grid">
-        {performances.map((p) => (
-          <PerformanceCard performance={p} href={`${base}/performance/${p.id}`} />
-        ))}
-      </div>
+      {performances.length > 0 ? (
+        <div class="grid">
+          {performances.map((p) => (
+            <PerformanceCard performance={p} href={`${base}/performance/${p.id}`} />
+          ))}
+        </div>
+      ) : (
+        <p class="note dim">
+          Nothing billed to {name} individually in this snapshot. That covers a fixed
+          window of KOPIS records, so it means "not registered here", not "not performing".
+          {groupPerformances.length > 0 && <> {group.en}'s own dates are below.</>}
+        </p>
+      )}
     </section>
 
     {groupPerformances.length > 0 && (

@@ -84,14 +84,11 @@ const performing = new Set(memberEntries.map(([n]) => n));
               const count = memberEntries.find(([n]) => n === name)?.[1].length ?? 0;
               return (
                 <li>
-                  {count > 0 ? (
-                    <a class="member has-shows" href={memberHref(name)}>
-                      <span lang="ko">{name}</span>
-                      <span class="chip chip-solo">{count}</span>
-                    </a>
-                  ) : (
-                    <span class="member" lang="ko">{name}</span>
-                  )}
+                  {/* Every member is linked — a member page is still useful with no solo dates. */}
+                  <a class="member" href={memberHref(name)}>
+                    <span lang="ko">{name}</span>
+                    {count > 0 && <span class="chip chip-solo">{count}</span>}
+                  </a>
                 </li>
               );
             })}
@@ -101,9 +98,11 @@ const performing = new Set(memberEntries.map(([n]) => n));
               Honest about provenance: these names come from KOPIS cast records,
               which use legal names. We do not map them to stage names unless the
               registry states it as fact.
+              Each clause is self-contained — an empty conditional used to leave a
+              dangling semicolon on pages where every member had dates.
             */}
-            Names as filed with KOPIS. Members with their own dates are linked;
-            {performing.size < members.length && <> the rest have no solo show in this snapshot.</>}
+            Names as filed with KOPIS — legal names, not stage names, unless the two coincide.
+            {performing.size > 0 && <> The badge counts solo and unit dates.</>}
           </p>
         </>
       ) : (
