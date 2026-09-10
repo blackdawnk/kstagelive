@@ -78,6 +78,37 @@ const KNOWN: Record<string, string> = {
   공원: 'Park',
 };
 
+/**
+ * Korean company-form markers. "(주)" is 주식회사 — Co., Ltd. — not a syllable
+ * to read aloud, and English usage drops it: "(주)CJ ENM" is just CJ ENM.
+ */
+const ORG_MARKERS = ['(주)', '(재)', '(사)', '(유)', '(합)', '(재단법인)', '(사단법인)', '주식회사'];
+
+/** Agencies and labels whose English name is a brand, not a reading. */
+const BRANDS: Record<string, string> = {
+  웨이크원: 'WAKEONE',
+  하이브: 'HYBE',
+  빅히트뮤직: 'BIGHIT MUSIC',
+  빅히트: 'BIGHIT',
+  플레디스: 'PLEDIS',
+  쏘스뮤직: 'SOURCE MUSIC',
+  어도어: 'ADOR',
+  빌리프랩: 'BELIFT LAB',
+  스타쉽: 'Starship',
+  스타쉽엔터테인먼트: 'Starship Entertainment',
+  큐브엔터테인먼트: 'CUBE Entertainment',
+  젤리피쉬: 'Jellyfish',
+  울림엔터테인먼트: 'Woollim Entertainment',
+  판타지오: 'Fantagio',
+  안테나: 'Antenna',
+  피네이션: 'P NATION',
+  엔터테인먼트: 'Entertainment',
+  뮤직: 'Music',
+  레이블: 'Label',
+  컴퍼니: 'Company',
+  프로덕션: 'Production',
+};
+
 /** Administrative suffixes, romanised with the standard hyphenation. */
 const SUFFIXES: Array<[string, string]> = [
   ['특별자치시', 'Special Self-Governing City'],
@@ -179,6 +210,19 @@ function splitSuffix(token: string): { stem: string; suffix: string } {
 function romanizeToken(token: string): string {
   if (!/[가-힣]/.test(token)) return token;
   if (KNOWN[token]) return KNOWN[token];
+  if (BRANDS[token]) return BRANDS[token];
+
+  // "(주)웨이크원" → drop the company form, then handle the name itself.
+  for (const marker of ORG_MARKERS) {
+    if (token.startsWith(marker)) {
+      const rest = token.slice(marker.length).trim();
+      return rest ? romanizeToken(rest) : '';
+    }
+    if (token.endsWith(marker)) {
+      const rest = token.slice(0, -marker.length).trim();
+      return rest ? romanizeToken(rest) : '';
+    }
+  }
 
   // Peel off surrounding punctuation so "(방이동)" gets suffix handling too.
   const wrapped = token.match(/^([([{"']*)(.*?)([)\]}"',.]*)$/s);

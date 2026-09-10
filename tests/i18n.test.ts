@@ -259,3 +259,24 @@ describe('romanizePersonName', () => {
     expect(romanizePersonName(null)).toBeNull();
   });
 });
+
+describe('company names', () => {
+  it('drops the Korean company form rather than reading it aloud', () => {
+    // "(Ju)CJ ENM" was the bug: (주) is 주식회사, i.e. Co., Ltd.
+    expect(romanize('(주)CJ ENM')).toBe('CJ ENM');
+    expect(romanize('주식회사웨이크원')).toBe('WAKEONE');
+  });
+
+  it('uses the brand spelling for an agency', () => {
+    expect(romanize('(주)웨이크원')).toBe('WAKEONE');
+    expect(romanize('하이브')).toBe('HYBE');
+    expect(romanize('안테나')).toBe('Antenna');
+  });
+
+  it('still romanises an unknown company', () => {
+    const r = romanize('(주)오드엔터테인먼트');
+    expect(r).not.toBeNull();
+    expect(r).not.toContain('(Ju)');
+    expect(r).not.toContain('주');
+  });
+});
