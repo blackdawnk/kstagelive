@@ -1,0 +1,174 @@
+---
+import Base from '../../layouts/Base.astro';
+import PerformanceCard from '../../components/PerformanceCard.astro';
+import { loadSnapshot } from '../../lib/data';
+import type { Performance } from '../../lib/data';
+import { buildIdolIndex } from '../../lib/idol';
+import type { Group } from '../../lib/idol';
+
+export async function getStaticPaths() {
+  const snapshot = loadSnapshot();
+  const { groups } = buildIdolIndex(snapshot);
+  return groups.map((e) => ({
+    params: { id: e.group.id },
+    props: {
+      group: e.group,
+      groupPerformances: e.groupPerformances,
+      members: e.members,
+      memberEntries: [...e.memberPerformances.entries()].sort(
+        (a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], 'ko'),
+      ),
+    },
+  }));
+}
+
+interface Props {
+  group: Group;
+  groupPerformances: Performance[];
+  members: string[];
+  memberEntries: Array<[string, Performance[]]>;
+}
+
+const { group, groupPerformances, members, memberEntries } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const memberHref = (name: string) => `${base}/group/${group.id}/member/${encodeURIComponent(name)}`;
+
+const soloCount = memberEntries.reduce((n, [, l]) => n + l.length, 0);
+const performing = new Set(memberEntries.map(([n]) => n));
+---
+
+<Base
+  title={`${group.en} — kstagelive`}
+  description={`${group.en} (${group.ko}) performances in Korea: group dates, plus solo and unit shows by members.`}
+>
+  <article class="wrap detail">
+    <p class="crumbs dim"><a href={`${base}/groups`}>Groups</a></p>
+
+    <h1 class="title">{group.en}</h1>
+    <p class="ko muted" lang="ko">{group.ko}</p>
+
+    <p class="tags">
+      <span class="chip">{group.agency}</span>
+      {group.fandom && <span class="chip chip-fandom">Fandom · {group.fandom}</span>}
+      {members.length > 0 && <span class="chip">{members.length} members known</span>}
+    </p>
+
+    <nav class="jump" aria-label="Sections">
+      <a href="#group">Group ({groupPerformances.length})</a>
+      <a href="#members">Members ({members.length})</a>
+      {soloCount > 0 && <a href="#solo">Solo &amp; unit ({soloCount})</a>}
+    </nav>
+
+    <section class="block" id="group">
+      <h2>Group schedule</h2>
+      {groupPerformances.length > 0 ? (
+        <div class="grid">
+          {groupPerformances.map((p) => (
+            <PerformanceCard performance={p} href={`${base}/performance/${p.id}`} />
+          ))}
+        </div>
+      ) : (
+        <p class="none dim">
+          No performance billed to {group.en} itself in this snapshot
+          {soloCount > 0 && <> — but members have {soloCount} solo or unit show{soloCount > 1 ? 's' : ''} below</>}.
+        </p>
+      )}
+    </section>
+
+    <section class="block" id="members">
+      <h2>Members</h2>
+      {members.length > 0 ? (
+        <>
+          <ul class="members">
+            {members.map((name) => {
+              const count = memberEntries.find(([n]) => n === name)?.[1].length ?? 0;
+              return (
+                <li>
+                  {count > 0 ? (
+                    <a class="member has-shows" href={memberHref(name)}>
+                      <span lang="ko">{name}</span>
+                      <span class="chip chip-solo">{count}</span>
+                    </a>
+                  ) : (
+                    <span class="member" lang="ko">{name}</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <p class="note dim">
+            {/*
+              Honest about provenance: these names come from KOPIS cast records,
+              which use legal names. We do not map them to stage names unless the
+              registry states it as fact.
+            */}
+            Names as filed with KOPIS. Members with their own dates are linked;
+            {performing.size < members.length && <> the rest have no solo show in this snapshot.</>}
+          </p>
+        </>
+      ) : (
+        <p class="none dim">
+          No roster recorded yet. A roster is read from the cast list on the group's own
+          performances, and KOPIS often leaves that field empty for arena shows.
+        </p>
+      )}
+    </section>
+
+    {memberEntries.length > 0 && (
+      <section class="block" id="solo">
+        <h2>Solo &amp; unit shows</h2>
+        {memberEntries.map(([name, list]) => (
+          <div class="member-block">
+            <h3>
+              <a href={memberHref(name)} lang="ko">{name}</a>
+              <span class="dim"> · {list.length}</span>
+            </h3>
+            <div class="grid">
+              {list.map((p) => (
+                <PerformanceCard performance={p} href={`${base}/performance/${p.id}`} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
+    )}
+  </article>
+</Base>
+
+<style>
+  .detail { padding-block: 36px 24px; }
+  .crumbs { font-size: 0.85rem; margin-bottom: 14px; }
+  .crumbs a { color: var(--text-muted); text-decoration: none; }
+  .crumbs a:hover { color: var(--neon-cyan); }
+
+  .title { font-size: clamp(1.8rem, 5vw, 2.8rem); margin-bottom: 2px; }
+  .ko { margin: 0 0 12px; font-size: 1rem; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 18px; }
+  .chip-fandom { border-color: color-mix(in srgb, var(--neon-purple) 45%, var(--border)); color: var(--neon-purple); }
+  .chip-solo { border-color: color-mix(in srgb, var(--neon-pink) 45%, var(--border)); color: var(--neon-pink); }
+
+  .jump { display: flex; gap: 14px; flex-wrap: wrap; padding-bottom: 6px; }
+  .jump a { font-size: 0.88rem; color: var(--text-muted); text-decoration: none; font-weight: 600; }
+  .jump a:hover { color: var(--neon-cyan); }
+
+  .block { margin-top: 40px; scroll-margin-top: 20px; }
+  .block h2 { font-size: 1.2rem; margin-bottom: 14px; }
+
+  .none { font-size: 0.9rem; max-width: 66ch; }
+
+  .members { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .member {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 999px; padding: 7px 14px; font-size: 0.92rem; color: var(--text-muted);
+  }
+  a.member { text-decoration: none; color: var(--text); }
+  a.member:hover { border-color: var(--neon-pink); color: var(--neon-pink); }
+
+  .note { font-size: 0.83rem; max-width: 68ch; }
+
+  .member-block { margin-bottom: 28px; }
+  .member-block h3 { font-size: 1rem; margin-bottom: 10px; }
+  .member-block h3 a { color: var(--text); text-decoration: none; }
+  .member-block h3 a:hover { color: var(--neon-pink); }
+</style>

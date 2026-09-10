@@ -1,0 +1,788 @@
+{
+  "_comment": [
+    "K-pop group registry. This is the only curated file in the project.",
+    "",
+    "Why it exists: KOPIS genre CCCD ('popular music') mixes idol concerts with jazz",
+    "salons, trot, indie club nights and acoustic sessions. Agency name alone is not",
+    "enough — Antenna produces both PEPPERTONES (indie) and idol acts, and IST turned",
+    "up on a wine-tasting gala. Matching a known group or member name is what actually",
+    "separates them.",
+    "",
+    "Members are NOT listed here. They are derived from `prfcast` on the group's own",
+    "performances, which SP05 found lists every member in full. Stage names are only",
+    "recorded where we can state them without guessing — KOPIS gives legal names",
+    "(SAKURA appears as 미야와키 사쿠라), and inventing a mapping would be a guess.",
+    "",
+    "`aliases` must be specific enough not to collide with ordinary words. Short or",
+    "generic tokens are matched with word boundaries only — see matchGroup()."
+  ],
+  "groups": [
+    {
+      "id": "bts",
+      "en": "BTS",
+      "ko": "방탄소년단",
+      "aliases": [
+        "BTS",
+        "방탄소년단",
+        "Bangtan"
+      ],
+      "agency": "HYBE / BIGHIT MUSIC",
+      "fandom": "ARMY"
+    },
+    {
+      "id": "blackpink",
+      "en": "BLACKPINK",
+      "ko": "블랙핑크",
+      "aliases": [
+        "BLACKPINK",
+        "블랙핑크"
+      ],
+      "agency": "YG Entertainment",
+      "fandom": "BLINK"
+    },
+    {
+      "id": "seventeen",
+      "en": "SEVENTEEN",
+      "ko": "세븐틴",
+      "aliases": [
+        "SEVENTEEN",
+        "세븐틴",
+        "SVT"
+      ],
+      "agency": "HYBE / PLEDIS",
+      "fandom": "CARAT"
+    },
+    {
+      "id": "twice",
+      "en": "TWICE",
+      "ko": "트와이스",
+      "aliases": [
+        "TWICE",
+        "트와이스"
+      ],
+      "agency": "JYP Entertainment",
+      "fandom": "ONCE"
+    },
+    {
+      "id": "stray-kids",
+      "en": "Stray Kids",
+      "ko": "스트레이 키즈",
+      "aliases": [
+        "Stray Kids",
+        "스트레이 키즈",
+        "SKZ"
+      ],
+      "agency": "JYP Entertainment",
+      "fandom": "STAY"
+    },
+    {
+      "id": "le-sserafim",
+      "en": "LE SSERAFIM",
+      "ko": "르세라핌",
+      "aliases": [
+        "LE SSERAFIM",
+        "LESSERAFIM",
+        "르세라핌"
+      ],
+      "agency": "HYBE / SOURCE MUSIC",
+      "fandom": "FEARNOT"
+    },
+    {
+      "id": "aespa",
+      "en": "aespa",
+      "ko": "에스파",
+      "aliases": [
+        "aespa",
+        "에스파"
+      ],
+      "agency": "SM Entertainment",
+      "fandom": "MY"
+    },
+    {
+      "id": "enhypen",
+      "en": "ENHYPEN",
+      "ko": "엔하이픈",
+      "aliases": [
+        "ENHYPEN",
+        "엔하이픈"
+      ],
+      "agency": "HYBE / BELIFT LAB",
+      "fandom": "ENGENE"
+    },
+    {
+      "id": "newjeans",
+      "en": "NewJeans",
+      "ko": "뉴진스",
+      "aliases": [
+        "NewJeans",
+        "뉴진스"
+      ],
+      "agency": "HYBE / ADOR",
+      "fandom": "Bunnies"
+    },
+    {
+      "id": "ive",
+      "en": "IVE",
+      "ko": "아이브",
+      "aliases": [
+        "IVE",
+        "아이브"
+      ],
+      "agency": "Starship Entertainment",
+      "fandom": "DIVE"
+    },
+    {
+      "id": "itzy",
+      "en": "ITZY",
+      "ko": "있지",
+      "aliases": [
+        "ITZY",
+        "있지"
+      ],
+      "agency": "JYP Entertainment",
+      "fandom": "MIDZY"
+    },
+    {
+      "id": "gidle",
+      "en": "(G)I-DLE",
+      "ko": "아이들",
+      "aliases": [
+        "(G)I-DLE",
+        "G)I-DLE",
+        "여자아이들",
+        "아이들"
+      ],
+      "agency": "CUBE Entertainment",
+      "fandom": "NEVERLAND"
+    },
+    {
+      "id": "nmixx",
+      "en": "NMIXX",
+      "ko": "엔믹스",
+      "aliases": [
+        "NMIXX",
+        "엔믹스"
+      ],
+      "agency": "JYP Entertainment",
+      "fandom": "NSWER"
+    },
+    {
+      "id": "red-velvet",
+      "en": "Red Velvet",
+      "ko": "레드벨벳",
+      "aliases": [
+        "Red Velvet",
+        "레드벨벳"
+      ],
+      "agency": "SM Entertainment",
+      "fandom": "ReVeluv"
+    },
+    {
+      "id": "nct-127",
+      "en": "NCT 127",
+      "ko": "엔시티 127",
+      "aliases": [
+        "NCT 127",
+        "NCT127",
+        "엔시티 127"
+      ],
+      "agency": "SM Entertainment",
+      "fandom": "NCTzen"
+    },
+    {
+      "id": "nct-dream",
+      "en": "NCT DREAM",
+      "ko": "엔시티 드림",
+      "aliases": [
+        "NCT DREAM",
+        "NCTDREAM",
+        "엔시티 드림"
+      ],
+      "agency": "SM Entertainment",
+      "fandom": "NCTzen"
+    },
+    {
+      "id": "exo",
+      "en": "EXO",
+      "ko": "엑소",
+      "aliases": [
+        "EXO",
+        "엑소"
+      ],
+      "agency": "SM Entertainment",
+      "fandom": "EXO-L"
+    },
+    {
+      "id": "super-junior",
+      "en": "SUPER JUNIOR",
+      "ko": "슈퍼주니어",
+      "aliases": [
+        "SUPER JUNIOR",
+        "SUPERJUNIOR",
+        "슈퍼주니어",
+        "SUJU"
+      ],
+      "agency": "SM Entertainment",
+      "fandom": "E.L.F."
+    },
+    {
+      "id": "shinee",
+      "en": "SHINee",
+      "ko": "샤이니",
+      "aliases": [
+        "SHINee",
+        "샤이니"
+      ],
+      "agency": "SM Entertainment",
+      "fandom": "SHAWOL"
+    },
+    {
+      "id": "girls-generation",
+      "en": "Girls' Generation",
+      "ko": "소녀시대",
+      "aliases": [
+        "Girls' Generation",
+        "소녀시대",
+        "SNSD"
+      ],
+      "agency": "SM Entertainment",
+      "fandom": "SONE"
+    },
+    {
+      "id": "riize",
+      "en": "RIIZE",
+      "ko": "라이즈",
+      "aliases": [
+        "RIIZE",
+        "라이즈"
+      ],
+      "agency": "SM Entertainment",
+      "fandom": "BRIIZE"
+    },
+    {
+      "id": "bigbang",
+      "en": "BIGBANG",
+      "ko": "빅뱅",
+      "aliases": [
+        "BIGBANG",
+        "빅뱅"
+      ],
+      "agency": "YG Entertainment",
+      "fandom": "V.I.P"
+    },
+    {
+      "id": "treasure",
+      "en": "TREASURE",
+      "ko": "트레저",
+      "aliases": [
+        "TREASURE",
+        "트레저"
+      ],
+      "agency": "YG Entertainment",
+      "fandom": "TEUME"
+    },
+    {
+      "id": "babymonster",
+      "en": "BABYMONSTER",
+      "ko": "베이비몬스터",
+      "aliases": [
+        "BABYMONSTER",
+        "BABYMONSTA",
+        "베이비몬스터"
+      ],
+      "agency": "YG Entertainment",
+      "fandom": "MONSTIEZ"
+    },
+    {
+      "id": "txt",
+      "en": "TOMORROW X TOGETHER",
+      "ko": "투모로우바이투게더",
+      "aliases": [
+        "TOMORROW X TOGETHER",
+        "TXT",
+        "투모로우바이투게더"
+      ],
+      "agency": "HYBE / BIGHIT MUSIC",
+      "fandom": "MOA"
+    },
+    {
+      "id": "boynextdoor",
+      "en": "BOYNEXTDOOR",
+      "ko": "보이넥스트도어",
+      "aliases": [
+        "BOYNEXTDOOR",
+        "보이넥스트도어",
+        "BND"
+      ],
+      "agency": "HYBE / KOZ",
+      "fandom": "ONEDOOR"
+    },
+    {
+      "id": "illit",
+      "en": "ILLIT",
+      "ko": "아일릿",
+      "aliases": [
+        "ILLIT",
+        "아일릿"
+      ],
+      "agency": "HYBE / BELIFT LAB",
+      "fandom": "GLLIT"
+    },
+    {
+      "id": "cortis",
+      "en": "CORTIS",
+      "ko": "코르티스",
+      "aliases": [
+        "CORTIS",
+        "코르티스"
+      ],
+      "agency": "HYBE / BIGHIT MUSIC",
+      "fandom": null
+    },
+    {
+      "id": "and-team",
+      "en": "&TEAM",
+      "ko": "앤팀",
+      "aliases": [
+        "&TEAM",
+        "앤팀"
+      ],
+      "agency": "HYBE LABELS JAPAN",
+      "fandom": "LUNÉ"
+    },
+    {
+      "id": "tws",
+      "en": "TWS",
+      "ko": "투어스",
+      "aliases": [
+        "TWS",
+        "투어스"
+      ],
+      "agency": "HYBE / PLEDIS",
+      "fandom": "42"
+    },
+    {
+      "id": "ateez",
+      "en": "ATEEZ",
+      "ko": "에이티즈",
+      "aliases": [
+        "ATEEZ",
+        "에이티즈"
+      ],
+      "agency": "KQ Entertainment",
+      "fandom": "ATINY"
+    },
+    {
+      "id": "the-boyz",
+      "en": "THE BOYZ",
+      "ko": "더보이즈",
+      "aliases": [
+        "THE BOYZ",
+        "THEBOYZ",
+        "더보이즈"
+      ],
+      "agency": "One Hundred",
+      "fandom": "THE B"
+    },
+    {
+      "id": "zerobaseone",
+      "en": "ZEROBASEONE",
+      "ko": "제로베이스원",
+      "aliases": [
+        "ZEROBASEONE",
+        "ZB1",
+        "제로베이스원"
+      ],
+      "agency": "WAKEONE",
+      "fandom": "ZEROSE"
+    },
+    {
+      "id": "izna",
+      "en": "izna",
+      "ko": "이즈나",
+      "aliases": [
+        "izna",
+        "이즈나"
+      ],
+      "agency": "WAKEONE",
+      "fandom": null
+    },
+    {
+      "id": "stayc",
+      "en": "STAYC",
+      "ko": "스테이씨",
+      "aliases": [
+        "STAYC",
+        "스테이씨"
+      ],
+      "agency": "High Up Entertainment",
+      "fandom": "SWITH"
+    },
+    {
+      "id": "kiss-of-life",
+      "en": "KISS OF LIFE",
+      "ko": "키스오브라이프",
+      "aliases": [
+        "KISS OF LIFE",
+        "키스오브라이프"
+      ],
+      "agency": "S2 Entertainment",
+      "fandom": "KISSY"
+    },
+    {
+      "id": "fifty-fifty",
+      "en": "FIFTY FIFTY",
+      "ko": "피프티 피프티",
+      "aliases": [
+        "FIFTY FIFTY",
+        "피프티 피프티",
+        "피프티피프티"
+      ],
+      "agency": "ATTRAKT",
+      "fandom": null
+    },
+    {
+      "id": "day6",
+      "en": "DAY6",
+      "ko": "데이식스",
+      "aliases": [
+        "DAY6",
+        "데이식스"
+      ],
+      "agency": "JYP Entertainment",
+      "fandom": "My Day"
+    },
+    {
+      "id": "nflying",
+      "en": "N.Flying",
+      "ko": "엔플라잉",
+      "aliases": [
+        "N.Flying",
+        "엔플라잉"
+      ],
+      "agency": "FNC Entertainment",
+      "fandom": "N.Fia"
+    },
+    {
+      "id": "cnblue",
+      "en": "CNBLUE",
+      "ko": "씨엔블루",
+      "aliases": [
+        "CNBLUE",
+        "씨엔블루"
+      ],
+      "agency": "FNC Entertainment",
+      "fandom": "BOICE"
+    },
+    {
+      "id": "onewe",
+      "en": "ONEWE",
+      "ko": "원위",
+      "aliases": [
+        "ONEWE",
+        "원위"
+      ],
+      "agency": "RBW",
+      "fandom": "WEVE"
+    },
+    {
+      "id": "oneus",
+      "en": "ONEUS",
+      "ko": "원어스",
+      "aliases": [
+        "ONEUS",
+        "원어스"
+      ],
+      "agency": "RBW",
+      "fandom": "TO MOON"
+    },
+    {
+      "id": "mamamoo",
+      "en": "MAMAMOO",
+      "ko": "마마무",
+      "aliases": [
+        "MAMAMOO",
+        "마마무"
+      ],
+      "agency": "RBW",
+      "fandom": "MOOMOO"
+    },
+    {
+      "id": "2pm",
+      "en": "2PM",
+      "ko": "투피엠",
+      "aliases": [
+        "2PM",
+        "투피엠"
+      ],
+      "agency": "JYP Entertainment",
+      "fandom": "HOTTEST"
+    },
+    {
+      "id": "monsta-x",
+      "en": "MONSTA X",
+      "ko": "몬스타엑스",
+      "aliases": [
+        "MONSTA X",
+        "MONSTAX",
+        "몬스타엑스"
+      ],
+      "agency": "Starship Entertainment",
+      "fandom": "MONBEBE"
+    },
+    {
+      "id": "astro",
+      "en": "ASTRO",
+      "ko": "아스트로",
+      "aliases": [
+        "ASTRO",
+        "아스트로"
+      ],
+      "agency": "Fantagio",
+      "fandom": "AROHA"
+    },
+    {
+      "id": "lun8",
+      "en": "LUN8",
+      "ko": "루네이트",
+      "aliases": [
+        "LUN8",
+        "루네이트"
+      ],
+      "agency": "Fantagio",
+      "fandom": null
+    },
+    {
+      "id": "xlov",
+      "en": "XLOV",
+      "ko": "엑스러브",
+      "aliases": [
+        "XLOV",
+        "엑스러브"
+      ],
+      "agency": "WM Entertainment",
+      "fandom": null
+    },
+    {
+      "id": "btob",
+      "en": "BTOB",
+      "ko": "비투비",
+      "aliases": [
+        "BTOB",
+        "비투비"
+      ],
+      "agency": "CUBE Entertainment",
+      "fandom": "MELODY"
+    },
+    {
+      "id": "sf9",
+      "en": "SF9",
+      "ko": "에스에프나인",
+      "aliases": [
+        "SF9",
+        "에스에프나인"
+      ],
+      "agency": "FNC Entertainment",
+      "fandom": "FANTASY"
+    },
+    {
+      "id": "oh-my-girl",
+      "en": "OH MY GIRL",
+      "ko": "오마이걸",
+      "aliases": [
+        "OH MY GIRL",
+        "오마이걸"
+      ],
+      "agency": "WM Entertainment",
+      "fandom": "MIRACLE"
+    },
+    {
+      "id": "triples",
+      "en": "tripleS",
+      "ko": "트리플에스",
+      "aliases": [
+        "tripleS",
+        "트리플에스"
+      ],
+      "agency": "MODHAUS",
+      "fandom": "WAV"
+    },
+    {
+      "id": "kep1er",
+      "en": "Kep1er",
+      "ko": "케플러",
+      "aliases": [
+        "Kep1er",
+        "케플러"
+      ],
+      "agency": "WAKEONE",
+      "fandom": "Kep1ian"
+    },
+    {
+      "id": "p1harmony",
+      "en": "P1Harmony",
+      "ko": "피원하모니",
+      "aliases": [
+        "P1Harmony",
+        "피원하모니"
+      ],
+      "agency": "FNC Entertainment",
+      "fandom": "P1ece"
+    },
+    {
+      "id": "katseye",
+      "en": "KATSEYE",
+      "ko": "캣츠아이",
+      "aliases": [
+        "KATSEYE",
+        "캣츠아이"
+      ],
+      "agency": "HYBE / Geffen",
+      "fandom": "EYEKONS"
+    },
+    {
+      "id": "meovv",
+      "en": "MEOVV",
+      "ko": "미야오",
+      "aliases": [
+        "MEOVV",
+        "미야오"
+      ],
+      "agency": "THEBLACKLABEL",
+      "fandom": null
+    },
+    {
+      "id": "dreamcatcher",
+      "en": "Dreamcatcher",
+      "ko": "드림캐쳐",
+      "aliases": [
+        "Dreamcatcher",
+        "드림캐쳐"
+      ],
+      "agency": "Dreamcatcher Company",
+      "fandom": "InSomnia"
+    },
+    {
+      "id": "fromis9",
+      "en": "fromis_9",
+      "ko": "프로미스나인",
+      "aliases": [
+        "fromis_9",
+        "프로미스나인"
+      ],
+      "agency": "HYBE / PLEDIS",
+      "fandom": "flover"
+    },
+    {
+      "id": "vivid",
+      "en": "VIVIZ",
+      "ko": "비비지",
+      "aliases": [
+        "VIVIZ",
+        "비비지"
+      ],
+      "agency": "BPM Entertainment",
+      "fandom": "Na.V"
+    }
+  ],
+  "_soloists_comment": [
+    "Members who perform under their own name. Needed because a solo bill names",
+    "the member, not the group, and the group's own prfcast is often empty so the",
+    "roster cannot be derived from data alone.",
+    "",
+    "`aliases`    stage names — matched anywhere in a title or cast.",
+    "`legalNames` the name KOPIS records — matched ONLY as a whole cast entry.",
+    "",
+    "The split matters: 이찬 (DINO) is a substring of trot singer 이찬원, and as a",
+    "title alias it wrongly claimed 17 performances. A legal name is only ever",
+    "compared against a complete comma-separated cast entry."
+  ],
+  "soloists": [
+    {
+      "id": "donghae",
+      "en": "DONGHAE",
+      "ko": "동해",
+      "aliases": [
+        "DONGHAE"
+      ],
+      "group": "super-junior",
+      "legalNames": [
+        "이동해"
+      ]
+    },
+    {
+      "id": "ryeowook",
+      "en": "RYEOWOOK",
+      "ko": "려욱",
+      "aliases": [
+        "RYEOWOOK"
+      ],
+      "group": "super-junior",
+      "legalNames": [
+        "김려욱"
+      ]
+    },
+    {
+      "id": "yoon-sanha",
+      "en": "YOON SAN-HA",
+      "ko": "윤산하",
+      "aliases": [
+        "YOON SAN-HA",
+        "YOON SANHA"
+      ],
+      "group": "astro",
+      "legalNames": [
+        "윤산하"
+      ]
+    },
+    {
+      "id": "young-k",
+      "en": "Young K",
+      "ko": "영케이",
+      "aliases": [
+        "Young K"
+      ],
+      "group": "day6",
+      "legalNames": [
+        "강영현"
+      ]
+    },
+    {
+      "id": "vernon",
+      "en": "VERNON",
+      "ko": "버논",
+      "aliases": [
+        "VERNON"
+      ],
+      "group": "seventeen",
+      "legalNames": [
+        "최한솔"
+      ]
+    },
+    {
+      "id": "the8",
+      "en": "THE 8",
+      "ko": "디에잇",
+      "aliases": [
+        "THE 8"
+      ],
+      "group": "seventeen",
+      "legalNames": [
+        "쉬밍하오"
+      ]
+    },
+    {
+      "id": "dino",
+      "en": "DINO",
+      "ko": "디노",
+      "aliases": [
+        "DINO",
+        "디노"
+      ],
+      "group": "seventeen",
+      "legalNames": [
+        "이찬"
+      ]
+    }
+  ]
+}

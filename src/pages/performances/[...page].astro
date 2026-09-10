@@ -2,15 +2,25 @@
 import Base from '../../layouts/Base.astro';
 import PerformanceCard from '../../components/PerformanceCard.astro';
 import Pager from '../../components/Pager.astro';
-import { loadSnapshot, upcoming, freshness } from '../../lib/data';
+import { loadSnapshot, freshness } from '../../lib/data';
 import type { Performance } from '../../lib/data';
-import { areaEn } from '../../lib/i18n/codes';
+import { buildIdolIndex } from '../../lib/idol';
 
 export const PAGE_SIZE = 48;
 
+/**
+ * Idol concerts only. The full popular-music catalogue lives at /all — KOPIS
+ * files K-pop under the same genre code as jazz, trot and indie club nights,
+ * so an unfiltered list buries the concerts most visitors came for.
+ */
 export async function getStaticPaths({ paginate }: { paginate: any }) {
   const snapshot = loadSnapshot();
-  return paginate(upcoming(snapshot), { pageSize: PAGE_SIZE });
+  const { idolPerformances } = buildIdolIndex(snapshot);
+  const today = new Date().toISOString().slice(0, 10);
+  const relevant = idolPerformances
+    .filter((p) => (p.endDate ?? p.startDate ?? '') >= today)
+    .sort((a, b) => (a.startDate ?? '9999').localeCompare(b.startDate ?? '9999'));
+  return paginate(relevant, { pageSize: PAGE_SIZE });
 }
 
 const { page } = Astro.props as {
@@ -18,52 +28,67 @@ const { page } = Astro.props as {
 };
 
 const snapshot = loadSnapshot();
+const { groups, idolPerformances } = buildIdolIndex(snapshot);
 const fresh = freshness(snapshot);
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-
-const areaCounts = new Map<string, number>();
-for (const p of upcoming(snapshot)) {
-  if (p.area) areaCounts.set(p.area, (areaCounts.get(p.area) ?? 0) + 1);
-}
-const areas = [...areaCounts.entries()].sort((a, b) => b[1] - a[1]);
+const withTickets = page.data.filter((p) => p.ticketLinks?.length > 0).length;
 ---
 
 <Base
-  title={`Upcoming performances${page.currentPage > 1 ? ` — page ${page.currentPage}` : ''} — kstagelive`}
-  description="Every upcoming registered popular-music performance in Korea, listed in English."
+  title={`Idol concerts${page.currentPage > 1 ? ` — page ${page.currentPage}` : ''} — kstagelive`}
+  description="K-pop idol concerts, fan meetings and fan-cons in Korea, listed in English."
 >
   <section class="wrap head">
-    <h1>Upcoming performances</h1>
+    <h1>Idol concerts</h1>
     <p class="lede muted">
-      {page.total.toLocaleString()} performances registered across {areas.length} regions.
-      Page {page.currentPage} of {page.lastPage}.
+      {page.total.toLocaleString()} upcoming K-pop shows from {groups.length} groups —
+      concerts, fan meetings, fan-cons and member solo dates.
+      {page.lastPage > 1 && <> Page {page.currentPage} of {page.lastPage}.</>}
     </p>
-    <p class="dim">Checked {fresh.checkedAtLabel}{fresh.isStale && ' · data may be out of date'}</p>
-
-    <nav class="areas" aria-label="Browse by region">
-      {areas.map(([area, count]) => (
-        <a class="chip area-chip" href={`${base}/region/${encodeURIComponent(area)}`}>
-          {areaEn(area)} <span class="dim">{count}</span>
-        </a>
-      ))}
-    </nav>
+    <p class="dim">
+      Checked {fresh.checkedAtLabel}{fresh.isStale && ' · data may be out of date'} ·
+      {withTickets} of {page.data.length} on this page have an official ticket link
+    </p>
+    <p class="dim">
+      <a href={`${base}/groups`}>Browse by group →</a>
+      <span class="sep">·</span>
+      <a href={`${base}/all`}>All popular music ({snapshot.performances.length.toLocaleString()})</a>
+    </p>
   </section>
 
   <section class="wrap">
-    <div class="grid">
-      {page.data.map((p) => (
-        <PerformanceCard performance={p} href={`${base}/performance/${p.id}`} />
-      ))}
-    </div>
-    <Pager page={page} label="Performances" />
+    {page.data.length > 0 ? (
+      <>
+        <div class="grid">
+          {page.data.map((p) => (
+            <PerformanceCard performance={p} href={`${base}/performance/${p.id}`} />
+          ))}
+        </div>
+        <Pager page={page} label="Idol concerts" />
+      </>
+    ) : (
+      <p class="card none">
+        No upcoming idol shows in this snapshot. That is a gap in the window we fetch,
+        not necessarily an empty calendar — {idolPerformances.length} idol performances
+        are recorded in total.
+      </p>
+    )}
+
+    <p class="foot dim">
+      A show is listed here when a registered group or member is named on the bill.
+      Matching by name rather than genre is deliberate: agency is not a reliable signal
+      either, since the same labels release indie and idol acts alike.
+    </p>
   </section>
 </Base>
 
 <style>
   .head { padding-block: 48px 24px; }
-  .lede { max-width: 62ch; font-size: 1.02rem; margin-block: 0 0.4rem; }
-  .head .dim { font-size: 0.85rem; }
-  .areas { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
-  .area-chip { text-decoration: none; }
-  .area-chip:hover { color: var(--text); border-color: var(--neon-purple); }
+  .lede { max-width: 64ch; font-size: 1.05rem; margin-block: 0 0.4rem; }
+  .head .dim { font-size: 0.86rem; margin: 2px 0; }
+  .head .dim a { color: var(--neon-cyan); text-decoration: none; }
+  .head .dim a:hover { text-decoration: underline; }
+  .sep { margin: 0 8px; color: var(--text-dim); }
+  .none { margin-top: 10px; }
+  .foot { margin-top: 36px; font-size: 0.84rem; max-width: 70ch; }
 </style>

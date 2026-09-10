@@ -1,0 +1,79 @@
+---
+import Base from '../layouts/Base.astro';
+import { loadSnapshot } from '../lib/data';
+import { buildIdolIndex } from '../lib/idol';
+
+const snapshot = loadSnapshot();
+const { groups, idolPerformances } = buildIdolIndex(snapshot);
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const withMembers = groups.filter((g) => g.members.length > 0).length;
+const withSolo = groups.filter((g) => g.memberPerformances.size > 0).length;
+---
+
+<Base
+  title="K-pop groups — kstagelive"
+  description="K-pop groups performing in Korea, with group and solo schedules for each."
+>
+  <section class="wrap head">
+    <h1>Groups</h1>
+    <p class="lede muted">
+      {groups.length} K-pop acts with a performance in Korea right now —
+      {idolPerformances.length} shows in total. Each group page separates the group's own
+      dates from its members' solo and unit dates.
+    </p>
+    <p class="dim">
+      {withMembers} groups have a member roster · {withSolo} have solo or unit shows in this snapshot.
+      Rosters are read from the official cast listings, so they reflect who was actually billed.
+    </p>
+  </section>
+
+  <section class="wrap">
+    <div class="grid">
+      {groups.map((e) => (
+        <article class="card grp">
+          <h2 class="gname">
+            <a href={`${base}/group/${e.group.id}`}>{e.group.en}</a>
+          </h2>
+          <p class="ko dim" lang="ko">{e.group.ko}</p>
+          <p class="agency dim">{e.group.agency}</p>
+          <p class="tags">
+            <span class="chip chip-total">{e.total} show{e.total > 1 ? 's' : ''}</span>
+            {e.groupPerformances.length > 0 && <span class="chip">Group {e.groupPerformances.length}</span>}
+            {e.memberPerformances.size > 0 && (
+              <span class="chip chip-solo">Solo {[...e.memberPerformances.values()].reduce((n, l) => n + l.length, 0)}</span>
+            )}
+            {e.group.fandom && <span class="chip chip-fandom">{e.group.fandom}</span>}
+          </p>
+        </article>
+      ))}
+    </div>
+
+    <p class="foot dim">
+      A group appears here only when a registered name is actually billed. KOPIS files
+      K-pop under the same genre code as jazz, trot and indie, so matching a name is what
+      separates them — see <a href={`${base}/all`}>all popular-music performances</a> for
+      the unfiltered list.
+    </p>
+  </section>
+</Base>
+
+<style>
+  .head { padding-block: 52px 26px; }
+  .lede { max-width: 64ch; font-size: 1.05rem; margin-block: 0 0.5rem; }
+  .head .dim { font-size: 0.88rem; max-width: 68ch; }
+
+  .grp { display: flex; flex-direction: column; gap: 2px; }
+  .grp:hover { border-color: var(--neon-purple); }
+  .gname { font-size: 1.08rem; margin: 0; line-height: 1.3; }
+  .gname a { color: var(--text); text-decoration: none; }
+  .gname a:hover { color: var(--neon-cyan); }
+  .ko { font-size: 0.85rem; margin: 0; }
+  .agency { font-size: 0.78rem; margin: 4px 0 0; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+  .chip-total { border-color: color-mix(in srgb, var(--neon-cyan) 45%, var(--border)); color: var(--neon-cyan); }
+  .chip-solo { border-color: color-mix(in srgb, var(--neon-pink) 45%, var(--border)); color: var(--neon-pink); }
+  .chip-fandom { border-color: color-mix(in srgb, var(--neon-purple) 45%, var(--border)); color: var(--neon-purple); }
+
+  .foot { margin-top: 36px; font-size: 0.85rem; max-width: 70ch; }
+</style>

@@ -1,0 +1,129 @@
+---
+import Base from '../../../../layouts/Base.astro';
+import PerformanceCard from '../../../../components/PerformanceCard.astro';
+import { loadSnapshot } from '../../../../lib/data';
+import type { Performance } from '../../../../lib/data';
+import { buildIdolIndex, soloistByName } from '../../../../lib/idol';
+import type { Group } from '../../../../lib/idol';
+
+export async function getStaticPaths() {
+  const snapshot = loadSnapshot();
+  const { groups } = buildIdolIndex(snapshot);
+  return groups.flatMap((e) =>
+    [...e.memberPerformances.entries()].map(([name, list]) => ({
+      params: { id: e.group.id, name },
+      props: {
+        group: e.group,
+        name,
+        performances: list,
+        groupPerformances: e.groupPerformances,
+        siblings: e.members.filter((m) => m !== name),
+      },
+    })),
+  );
+}
+
+interface Props {
+  group: Group;
+  name: string;
+  performances: Performance[];
+  groupPerformances: Performance[];
+  siblings: string[];
+}
+
+const { group, name, performances, groupPerformances, siblings } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const solo = soloistByName(name);
+const venues = new Set(performances.map((p) => p.venueName).filter(Boolean));
+---
+
+<Base
+  title={`${name} (${group.en}) — kstagelive`}
+  description={`Solo and unit performances by ${name} of ${group.en} in Korea.`}
+>
+  <article class="wrap detail">
+    <p class="crumbs dim">
+      <a href={`${base}/groups`}>Groups</a>
+      <span aria-hidden="true">›</span>
+      <a href={`${base}/group/${group.id}`}>{group.en}</a>
+    </p>
+
+    <h1 class="title" lang="ko">{name}</h1>
+    <p class="sub muted">
+      {solo && <>{solo.ko} · </>}
+      <a href={`${base}/group/${group.id}`}>{group.en}</a>
+      {group.fandom && <span class="dim"> · {group.fandom}</span>}
+    </p>
+
+    <p class="tags">
+      <span class="chip chip-solo">{performances.length} solo/unit show{performances.length > 1 ? 's' : ''}</span>
+      {venues.size > 0 && <span class="chip">{venues.size} venue{venues.size > 1 ? 's' : ''}</span>}
+      <span class="chip">{group.agency}</span>
+    </p>
+
+    <section class="block">
+      <h2>Solo &amp; unit</h2>
+      <div class="grid">
+        {performances.map((p) => (
+          <PerformanceCard performance={p} href={`${base}/performance/${p.id}`} />
+        ))}
+      </div>
+    </section>
+
+    {groupPerformances.length > 0 && (
+      <section class="block">
+        <h2>With {group.en}</h2>
+        <p class="note dim">
+          {/*
+            We list the group's own dates for context but do not claim this member
+            appears at each one — KOPIS bills these to the group, not to individuals.
+          */}
+          Dates billed to {group.en}. Individual line-ups are not filed per date, so treat
+          this as the group's schedule rather than a confirmed appearance.
+        </p>
+        <div class="grid">
+          {groupPerformances.map((p) => (
+            <PerformanceCard performance={p} href={`${base}/performance/${p.id}`} />
+          ))}
+        </div>
+      </section>
+    )}
+
+    {siblings.length > 0 && (
+      <section class="block">
+        <h2>Other members</h2>
+        <ul class="members">
+          {siblings.map((m) => (
+            <li><span class="member" lang="ko">{m}</span></li>
+          ))}
+        </ul>
+      </section>
+    )}
+  </article>
+</Base>
+
+<style>
+  .detail { padding-block: 36px 24px; }
+  .crumbs { font-size: 0.85rem; margin-bottom: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .crumbs a { color: var(--text-muted); text-decoration: none; }
+  .crumbs a:hover { color: var(--neon-cyan); }
+
+  .title { font-size: clamp(1.7rem, 4.5vw, 2.5rem); margin-bottom: 4px; word-break: keep-all; }
+  .sub { margin: 0 0 14px; font-size: 0.95rem; }
+  .sub a { color: var(--neon-cyan); text-decoration: none; }
+  .sub a:hover { text-decoration: underline; }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+  .chip-solo { border-color: color-mix(in srgb, var(--neon-pink) 45%, var(--border)); color: var(--neon-pink); }
+
+  .block { margin-top: 38px; }
+  .block h2 { font-size: 1.15rem; margin-bottom: 12px; }
+  .note { font-size: 0.84rem; max-width: 68ch; margin: -4px 0 14px; }
+
+  .members { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .member {
+    display: inline-block; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 999px; padding: 7px 14px; font-size: 0.9rem; color: var(--text-muted);
+  }
+</style>
