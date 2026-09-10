@@ -3,7 +3,8 @@ import Base from '../../layouts/Base.astro';
 import PerformanceCard from '../../components/PerformanceCard.astro';
 import { loadSnapshot, performancesAtVenue } from '../../lib/data';
 import type { Performance, Venue } from '../../lib/data';
-import { facilityKindEn } from '../../lib/i18n/codes';
+import { facilityKindEn, AREA_EN } from '../../lib/i18n/codes';
+import { romanize, romanizeAddress } from '../../lib/i18n/romanize';
 import { mapLinks } from '../../lib/maps/links';
 
 export async function getStaticPaths() {
@@ -22,6 +23,10 @@ interface Props {
 const { venue: v, performances } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const maps = mapLinks(v.lat, v.lon, v.name);
+// Korean stays primary — it is what a map app or a taxi driver needs — with a
+// Latin reading beside it so the name is pronounceable and recognisable.
+const nameLatin = romanize(v.name);
+const addressLatin = romanizeAddress(v.address, AREA_EN as Record<string, string>);
 
 const AMENITY_LABELS: Array<[keyof typeof v.amenities, string]> = [
   ['restaurant', 'Restaurant'],
@@ -48,7 +53,13 @@ const anyAccessKnown = ACCESS_LABELS.some(([k]) => v.accessibility[k] === 'yes')
     <p class="crumbs dim"><a href={`${base}/venues`}>Venues</a></p>
 
     <h1 lang="ko" class="title">{v.name}</h1>
-    {v.address && <p class="addr muted" lang="ko">{v.address}</p>}
+    {nameLatin && nameLatin !== v.name && <p class="latin dim">{nameLatin}</p>}
+    {v.address && (
+      <p class="addr muted">
+        <span lang="ko">{v.address}</span>
+        {addressLatin && <span class="latin dim">{addressLatin}</span>}
+      </p>
+    )}
 
     <p class="tags">
       {v.kind && <span class="chip">{facilityKindEn(v.kind)}</span>}
@@ -122,6 +133,9 @@ const anyAccessKnown = ACCESS_LABELS.some(([k]) => v.accessibility[k] === 'yes')
           {v.halls.map((h) => (
             <div class="card hall">
               <h3 lang="ko">{h.name}</h3>
+              {romanize(h.name) && romanize(h.name) !== h.name && (
+                <p class="latin dim">{romanize(h.name)}</p>
+              )}
               <p class="dim">
                 {h.seatCount ? `${h.seatCount.toLocaleString()} seats` : 'Capacity not recorded'}
                 {h.wheelchairSeats != null && <> · {h.wheelchairSeats} wheelchair seats</>}
@@ -166,6 +180,10 @@ const anyAccessKnown = ACCESS_LABELS.some(([k]) => v.accessibility[k] === 'yes')
 
   .title { font-size: clamp(1.7rem, 4.5vw, 2.4rem); margin-bottom: 6px; word-break: keep-all; }
   .addr { margin: 0 0 14px; }
+  /* A generated reading, shown under the original rather than replacing it. */
+  .latin { display: block; font-size: 0.86rem; margin: 2px 0 0; }
+  .title + .latin { margin-bottom: 10px; }
+  .hall .latin { margin: 0 0 4px; font-size: 0.8rem; }
   .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
 
   .block { margin-top: 34px; }

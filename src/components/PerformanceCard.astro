@@ -2,6 +2,8 @@
 import type { Performance } from '../lib/data';
 import { formatDateRange, tidyVenueName } from '../lib/data';
 import { areaEn, stateEn, stateSlug } from '../lib/i18n/codes';
+import { parseTitle } from '../lib/i18n/places';
+import { romanize } from '../lib/i18n/romanize';
 
 interface Props {
   performance: Performance;
@@ -10,6 +12,13 @@ interface Props {
 
 const { performance: p, href } = Astro.props;
 const slug = stateSlug(p.state);
+
+// KOPIS puts the tour city in the title as "[일본]". Lift it out as an English
+// badge so an English listing does not carry stray Korean, while the title
+// itself stays exactly as filed.
+const parsed = parseTitle(p.title);
+const venue = tidyVenueName(p.venueName);
+const venueLatin = romanize(venue);
 ---
 
 <article class="perf">
@@ -18,19 +27,21 @@ const slug = stateSlug(p.state);
       AC15 — the title stays in Korean on purpose. A visitor needs the original
       string to search for it on a Korean ticket site.
     */}
-    <h3 class="perf-title" lang="ko">{p.title}</h3>
+    <h3 class="perf-title" lang="ko">{parsed.title}</h3>
   </a>
 
   <p class="perf-when">{formatDateRange(p.startDate, p.endDate)}</p>
 
   <p class="perf-where muted">
-    <span lang="ko">{tidyVenueName(p.venueName)}</span>
+    <span lang="ko">{venue}</span>
+    {venueLatin && venueLatin !== venue && <span class="latin dim"> {venueLatin}</span>}
     {p.area && <span class="dim"> · {areaEn(p.area)}</span>}
   </p>
 
   <p class="perf-tags">
     {/* Status carries a text label, never colour alone (NFR08). */}
     <span class={`chip status-${slug}`}>{stateEn(p.state) || 'Status unknown'}</span>
+    {parsed.places.map((place) => <span class="chip chip-place">{place}</span>)}
     {p.isFestival && <span class="chip">Festival</span>}
     {p.isVisiting && <span class="chip">International act</span>}
     {p.openRun && <span class="chip">Open run</span>}
@@ -63,6 +74,8 @@ const slug = stateSlug(p.state);
 
   .perf-when { margin: 2px 0 0; font-weight: 600; color: var(--neon-cyan); font-size: 0.92rem; }
   .perf-where { margin: 0; font-size: 0.9rem; }
+  /* The Latin reading sits beside the Korean, never instead of it. */
+  .latin { font-size: 0.86em; }
   .perf-tags { margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
 
   /* Colour reinforces the label; the label is the source of truth. */
@@ -70,4 +83,5 @@ const slug = stateSlug(p.state);
   .status-running { border-color: color-mix(in srgb, var(--status-running) 45%, var(--border)); color: var(--status-running); }
   .status-ended { color: var(--status-ended); }
   .chip-ticket { border-color: color-mix(in srgb, var(--neon-pink) 45%, var(--border)); color: var(--neon-pink); }
+  .chip-place { border-color: color-mix(in srgb, var(--neon-purple) 45%, var(--border)); color: var(--neon-purple); }
 </style>

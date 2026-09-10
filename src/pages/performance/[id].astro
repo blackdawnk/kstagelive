@@ -3,6 +3,9 @@ import Base from '../../layouts/Base.astro';
 import { loadSnapshot, formatDateRange, tidyVenueName } from '../../lib/data';
 import type { Performance, Venue } from '../../lib/data';
 import { areaEn, genreEn, stateEn, stateSlug } from '../../lib/i18n/codes';
+import { parseTitle } from '../../lib/i18n/places';
+import { romanize, romanizePersonName } from '../../lib/i18n/romanize';
+import { formatPrice, formatSchedule, formatAgeLimit, formatRuntime } from '../../lib/i18n/format';
 
 export async function getStaticPaths() {
   const snapshot = loadSnapshot();
@@ -21,13 +24,53 @@ const { performance: p, venue } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const slug = stateSlug(p.state);
 
-const facts: Array<[string, string]> = [];
-if (p.priceGuide) facts.push(['Tickets', p.priceGuide]);
-if (p.scheduleGuide) facts.push(['Showtimes', p.scheduleGuide]);
-if (p.runtime) facts.push(['Running time', p.runtime]);
-if (p.ageLimit) facts.push(['Age rating', p.ageLimit]);
-if (p.producer) facts.push(['Production', p.producer]);
-if (p.host && p.host !== p.producer) facts.push(['Presented by', p.host]);
+const parsed = parseTitle(p.title);
+const venueName = tidyVenueName(p.venueName);
+const venueLatin = romanize(venueName);
+
+/**
+ * Facts are shown in English with the Korean kept alongside — the visitor needs
+ * the original to search a ticket site or show it to someone here.
+ * `original` is set only when we actually converted something.
+ */
+interface Fact {
+  label: string;
+  /** Shown first. */
+  value: string;
+  /** Shown beneath, smaller. */
+  sub?: string;
+  /** Language of `value` — Korean values get lang="ko" for correct rendering. */
+  valueLang?: 'ko';
+}
+
+const facts: Fact[] = [];
+
+/** Converted fields lead with English and keep the filed Korean underneath. */
+const addConverted = (
+  label: string,
+  raw: string | null | undefined,
+  fmt: (s: string) => { text: string; translated: boolean },
+) => {
+  const src = (raw ?? '').trim();
+  if (!src) return;
+  const { text, translated } = fmt(src);
+  facts.push({ label, value: text, sub: translated ? src : undefined, valueLang: translated ? undefined : 'ko' });
+};
+
+/** Proper nouns lead with the Korean; the Latin reading is the aid. */
+const addName = (label: string, raw: string | null | undefined) => {
+  const src = (raw ?? '').trim();
+  if (!src) return;
+  const latin = romanize(src);
+  facts.push({ label, value: src, sub: latin ?? undefined, valueLang: 'ko' });
+};
+
+addConverted('Tickets', p.priceGuide, formatPrice);
+addConverted('Showtimes', p.scheduleGuide, formatSchedule);
+addConverted('Running time', p.runtime, formatRuntime);
+addConverted('Age rating', p.ageLimit, formatAgeLimit);
+addName('Production', p.producer);
+if (p.host && p.host !== p.producer) addName('Presented by', p.host);
 ---
 
 <Base title={`${p.title} — kstagelive`} description={`${p.title} at ${p.venueName}, ${areaEn(p.area)}.`}>
@@ -35,10 +78,11 @@ if (p.host && p.host !== p.producer) facts.push(['Presented by', p.host]);
     <p class="crumbs dim"><a href={`${base}/`}>Performances</a> <span aria-hidden="true">›</span> {areaEn(p.area)}</p>
 
     {/* Korean title first — it is the searchable, authoritative string (AC15). */}
-    <h1 lang="ko" class="title">{p.title}</h1>
+    <h1 lang="ko" class="title">{parsed.title}</h1>
 
     <p class="tags">
       <span class={`chip status-${slug}`}>{stateEn(p.state) || 'Status unknown'}</span>
+      {parsed.places.map((place) => <span class="chip chip-place">{place}</span>)}
       {p.genre && <span class="chip">{genreEn(p.genre)}</span>}
       {p.isFestival && <span class="chip">Festival</span>}
       {p.isVisiting && <span class="chip">International act</span>}
@@ -47,15 +91,25 @@ if (p.host && p.host !== p.producer) facts.push(['Presented by', p.host]);
 
     <p class="when">{formatDateRange(p.startDate, p.endDate)}</p>
     <p class="where muted">
-      <span lang="ko">{tidyVenueName(p.venueName)}</span><span class="dim"> · {areaEn(p.area)}</span>
+      <span lang="ko">{venueName}</span>
+      {venueLatin && venueLatin !== venueName && <span class="dim"> · {venueLatin}</span>}
+      <span class="dim"> · {areaEn(p.area)}</span>
     </p>
 
     {p.cast?.length > 0 && (
       <section class="block">
         <h2>Line-up</h2>
         {/* prfcast carries real names; SP05 found idol members listed in full. */}
-        <ul class="cast" lang="ko">
-          {p.cast.map((name) => <li class="chip">{name}</li>)}
+        <ul class="cast">
+          {p.cast.map((name) => {
+            const latin = romanizePersonName(name);
+            return (
+              <li class="chip cast-chip">
+                <span lang="ko">{name}</span>
+                {latin && latin !== name && <span class="latin dim">{latin}</span>}
+              </li>
+            );
+          })}
         </ul>
       </section>
     )}
@@ -64,10 +118,13 @@ if (p.host && p.host !== p.producer) facts.push(['Presented by', p.host]);
       <section class="block">
         <h2>Details</h2>
         <dl class="facts">
-          {facts.map(([label, value]) => (
+          {facts.map((f) => (
             <div class="fact">
-              <dt class="dim">{label}</dt>
-              <dd lang="ko">{value}</dd>
+              <dt class="dim">{f.label}</dt>
+              <dd>
+                <span lang={f.valueLang}>{f.value}</span>
+                {f.sub && <span class="sub dim" lang={f.valueLang ? undefined : 'ko'}>{f.sub}</span>}
+              </dd>
             </div>
           ))}
         </dl>
@@ -154,11 +211,15 @@ if (p.host && p.host !== p.producer) facts.push(['Presented by', p.host]);
   .block h2 { font-size: 1.15rem; margin-bottom: 12px; }
 
   .cast { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .cast-chip { flex-direction: column; align-items: flex-start; gap: 0; padding: 5px 12px; }
+  .cast-chip .latin { font-size: 0.74rem; line-height: 1.3; }
 
   .facts { margin: 0; display: grid; gap: 12px; }
   .fact { display: grid; grid-template-columns: 150px 1fr; gap: 12px; }
   .fact dt { font-size: 0.85rem; }
   .fact dd { margin: 0; }
+  .fact .sub { display: block; font-size: 0.82rem; margin-top: 2px; }
+  .chip-place { border-color: color-mix(in srgb, var(--neon-purple) 45%, var(--border)); color: var(--neon-purple); }
   @media (max-width: 560px) {
     .fact { grid-template-columns: 1fr; gap: 2px; }
   }
